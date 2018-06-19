@@ -1,0 +1,2231 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><templates><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="add a new UTM class" enabled="true" name="V93000_Misc_AddNewUTMClass">/**
+ * Test method class.
+ *
+ * For each testsuite using this test method, one object of this
+ * class is created.
+ */
+class ${Demo}: public testmethod::TestMethod {
+
+protected:
+  /**
+   *Initialize the parameter interface to the testflow.
+   *This method is called just once after a testsuite is created.
+   *
+   *Note: Test Method API should not be used in this method.
+   */
+  virtual void initialize()
+  {
+    //Add your initialization code here
+  }
+
+  /**
+   *This test is invoked per site.
+   */
+  virtual void run()
+  {
+    //Add your test code here.
+    return;
+  }
+
+  /**
+   *This function will be invoked once the specified parameter's value is changed.
+   *@param parameterIdentifier
+   *
+   *Note: Test Method API should not be used in this method.
+   */
+  virtual void postParameterChange(const string&amp; parameterIdentifier)
+  {
+    //Add your code
+    return;
+  }
+
+  /**
+   *This function will be invoked once the Select Test Method Dialog is opened.
+   */
+  virtual const string getComment() const 
+  {
+    string comment = " please add your comment for this method.";
+    return comment;
+  }
+};
+REGISTER_TESTMETHOD("${Demo}", ${Demo});
+</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="add a new UTM parameter" enabled="true" name="V93000_Misc_AddParameter">addParameter("${parameterID}",
+             "${double}",      // parameter type: "int","double","string"...
+             &amp;m${VariableName})//mVariableName should be declared as Class member variable 
+  .setDefault("0")
+  .setOptions("0:0.1")
+  .setComment("");</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_ADC_Distortion_SMCPostProcess">// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${vecVarForAwgPin},
+    const string ${resultArea},
+    const string ${awgPin})
+  {  	
+    int ${numberOfHarmonics} = 5; //Harmonics number to be calculated for THD
+    int ${numberOfCycle} = 123; //Cycle number of the fundermental signal
+  	
+    THDtype ${thdResult}; //SNR,SND,THD,H2,H3
+    ARRAY_I ${adWave} = SMC_GET_VECTORS(${vecVarForAwgPin},${resultArea});
+  
+    // full bandwidth, get the distortion    
+    DSP_THD(${adWave},&amp;${thdResult},${numberOfCycle},${numberOfHarmonics},DB,0);   
+    
+    SMC_PUT_DEBUG(${awgPin},"waveform",${adWave});
+    
+    //  Data Logging
+    SMC_TEST(${awgPin}, "snr", V93kLimits::tmLimits, ${thdResult}.snr, true);
+    SMC_TEST(${awgPin}, "thd", V93kLimits::tmLimits, ${thdResult}.thd, true);
+  }
+  </template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_ADC_FreqResp_SMCPostProcess">// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${vecVarForAwgPin},
+    const string ${resultArea},
+    const string ${awgPin})
+  {  	
+    double ${fsADC} = 40; //Effective sampling rate(MHz)
+  
+    ARRAY_I ${adWave} = SMC_GET_VECTORS(${vecVarForAwgPin},${resultArea});
+    // Define bin numbers of the test frequency here
+    ARRAY_I  ${binNumberArray}( 10 );
+    ${binNumberArray}[0] = 13; // Reference Bin = 1.0 MHz
+    ${binNumberArray}[1] = 14; // 1.1 MHz
+    ${binNumberArray}[2] = 15; // 1.2 MHz
+    ${binNumberArray}[3] = 17; // 1.3 MHz
+    ${binNumberArray}[4] = 18; // 1.4 MHz
+    ${binNumberArray}[5] = 19; // 1.5 MHz
+    ${binNumberArray}[6] = 20; // 1.6 MHz
+    ${binNumberArray}[7] = 22; // 1.7 MHz
+    ${binNumberArray}[8] = 23; // 1.8 MHz
+    ${binNumberArray}[9] = 24; // 1.9 MHz
+    
+    // gain response &amp; -3db point calculation
+    ARRAY_D  ${deltaGainArray}(${binNumberArray}.size());
+    ARRAY_D  ${spectrum} ;   
+    int ${fundamentalBin} = ${binNumberArray}[0]; // element 0 is supposed to be the reference bin
+    DSP_SPECTRUM (${adWave}, ${spectrum}, DB, 0.0, RECT, 0) ;    
+      
+    double  ${refGain} = ${spectrum}[${fundamentalBin}]; 
+    int ${count3dB} = 0 ;  
+    for ( int i = 0; i &lt; ${binNumberArray}.size(); i++ ) 
+    {
+      ${deltaGainArray}[i] = ${spectrum}[${binNumberArray}[i]] - ${refGain};       
+      if ( ${deltaGainArray}[i] &gt; -3.0 ) 
+      { 
+        ${count3dB} = i; // this comes to be the bin number just before crossing -3dB point
+      }
+    }
+     
+    // linear regression to get a line passing (gain[${count3dB}], ${count3dB}) and (gain[${count3dB}+1], ${count3dB}+1)
+    double ${coefficient}=0.0, ${constant}=0.0; 
+    DSP_REG1(${deltaGainArray}, &amp;${coefficient}, &amp;${constant}, ${count3dB}, 2);
+        
+    // line inteporation to get the bin of 3dB point
+    double ${bin3db} = ((-3.0-${constant})/${coefficient} - static_cast&lt;int&gt;((-3.0-${constant})/${coefficient})) * (${binNumberArray}[${count3dB}+1] - ${binNumberArray}[${count3dB}])
+                     +  ${binNumberArray}[${count3dB}];
+               
+    double ${freq3dB} = ${bin3db} * ${fsADC} / ${adWave}.size();
+    
+    SMC_PUT_DEBUG(${awgPin}, "waveform", ${adWave});               
+    
+    // Data Logging
+    SMC_TEST(${awgPin}, "pf_3db(MHz)", V93kLimits::tmLimits, ${freq3dB}*1e-6, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_ADC_GainPhase_SMCPostProcess">// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${vecVarForAwgPin_I},
+    const string ${vecVarForAwgPin_Q},
+    const string ${resultArea},
+    const string ${awgPin_I},
+    const string ${awgPin_Q})
+  {  	
+    int ${mCycle} = 21; //number of cycle of the waveform
+
+    // data upload  	
+    ARRAY_I ${adWave_I} = SMC_GET_VECTORS(${vecVarForAwgPin_I},${resultArea});
+    ARRAY_I ${adWave_Q} = SMC_GET_VECTORS(${vecVarForAwgPin_Q},${resultArea});
+    
+    //post processing to analysis the captured waveform    
+    double ${Gain_ref} = 7373; // reference gain
+    double ${gain_I},  ${gain_Q};  //captured waveform gain (amplitude)
+    double ${phase_I}, ${phase_Q}; //captured waveform phase 
+    
+    ARRAY_COMPLEX ${result};
+    DSP_FFT(${adWave_I},${result},RECT);
+    COMPLEX ${signal} = ${result}[${mCycle}]; // fundamental frequency component
+    ${gain_I} = sqrt((${signal}.real()) * (${signal}.real()) + (${signal}.imag()) * (${signal}.imag()));
+    ${phase_I} = atan2(${signal}.imag(), ${signal}.real());
+
+    DSP_FFT(${adWave_Q},${result},RECT);
+    ${signal} = ${result}[${mCycle}];
+    ${gain_Q} = sqrt((${signal}.real()) * (${signal}.real()) + (${signal}.imag()) * (${signal}.imag()));
+    ${phase_Q} = atan2(${signal}.imag(), ${signal}.real());
+    
+    //derived result from waveform parameter
+    double  ${gain_err_I} = 20*log10(${gain_I}/${Gain_ref});           // gain error of I [dB]
+    double  ${gain_err_Q} = 20*log10(${gain_Q}/${Gain_ref});           // gain error of Q [dB]
+    double  ${gain_imb}   = 20*log10(${gain_I}/${gain_Q});             // gain imbalance [dB]
+    double  ${phase_imb}  = abs(${phase_I}-${phase_Q})/M_PI*180.0;     // phase imbalance [deg]
+    if (${phase_imb} &gt; 180)
+    {
+      ${phase_imb} = 360 -${phase_imb};
+    }
+    // Data Logging
+    SMC_TEST(${awgPin_I}, "gain_err_I", V93kLimits::tmLimits, ${gain_err_I}, true);
+    SMC_TEST(${awgPin_Q}, "gain_err_Q", V93kLimits::tmLimits, ${gain_err_Q}, true);
+    SMC_TEST("IQ", "gain_imb", V93kLimits::tmLimits, ${gain_imb}, true);
+    SMC_TEST("IQ", "phase_imb", V93kLimits::tmLimits, ${phase_imb}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_ADC_IQ_MeasurementSetup">// Do IO measurement for ADC
+string ${awgPin_I} = "awgPin_I";
+string ${awgPin_Q} = "awgPin_Q";
+string ${vecVarForAwgPin_I} = "vecForAwgPin_I";
+string ${vecVarForAwgPin_Q} = "vecForAwgPin_Q";
+string ${resultArea} = "adcBitArea";
+int ${resultAreaSize} = 128000;
+string ${capturePinlist} = "dig1,dig2,dig3";
+static bool ${isResultAreaAllocated} = false;
+
+ON_FIRST_INVOCATION_BEGIN();
+  Routing.pin(${awgPin_I}).connect(TM::SINGLE);
+  Routing.pin(${awgPin_Q}).connect(TM::SINGLE);
+  Analog.AWG(${awgPin_I}).enable();
+  Analog.AWG(${awgPin_Q}).enable();
+        
+  //for optimal usage, the result area is allocated only once.
+  if (!${isResultAreaAllocated})
+  {
+    RESULT_AREA_CONFIG resultConfig(${capturePinlist});
+    resultConfig.appendArea(${resultArea},${resultAreaSize}).activateWithoutOverwrite();
+    ${isResultAreaAllocated} = true;
+  }
+  SMC_DIGITAL_CAPTURE_TEST(100 ms, ${resultArea});
+
+  Analog.AWG(${awgPin_I}).disable();
+  Analog.AWG(${awgPin_Q}).disable();
+  Routing.pin(${awgPin_I}).disconnect();
+  Routing.pin(${awgPin_Q}).disconnect();
+ON_FIRST_INVOCATION_END();
+
+// kick off upload and caculation
+SMC_ARM(${vecVarForAwgPin_I},${vecVarForAwgPin_Q},${resultArea},${awgPin_I},${awgPin_Q});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_ADC_LinearityRamp_SMCPostProcess">// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${vecVarForAwgPin},
+    const string ${resultArea},
+    const string ${awgPin})
+  {  	
+    int ${numberOfBits} = 12; // Number of bits of the ADC
+    int ${fullScaleCode} = static_cast&lt;int&gt;(pow(2.0,${numberOfBits})+0.1) -1; // ADC Fullscale code (BIN equiv.)
+    int  ${missingCodeData}[65536];  // Missing code data; OK for &lt;=16 bits  
+    int  ${numberOfMissingCode};     // # of missing code
+    double ${dMissThresh}=0;         // Missing code decision count 
+    ARRAY_D ${waveDLE};                 // DLE array
+    ARRAY_D ${waveILE};                 // ILE array
+    ARRAY_I ${histogramResultArray}; // Ramp Histogram
+    LINEARtype  ${linearity};        // Linearity Result                             
+    
+    ARRAY_I ${adWave} = SMC_GET_VECTORS(${vecVarForAwgPin},${resultArea});  // captured data array
+    SMC_PUT_DEBUG(${awgPin},"Linearity_Ramp",${adWave});
+    
+    // the waveform is supposed to overload the input range(tipically 10% or more)
+    DSP_HISTOGRAM(${adWave},${histogramResultArray},0.5,(${fullScaleCode} - 0.5),${fullScaleCode} + 1);
+    SMC_PUT_DEBUG(${awgPin},"Linearity_Ramp_Histogram",${histogramResultArray});
+    
+    DSP_ADC_HISTOGRAM(${histogramResultArray},&amp;${linearity},${waveDLE},${waveILE},&amp;${numberOfMissingCode},${missingCodeData},END_PT,${dMissThresh});
+    SMC_PUT_DEBUG(${awgPin},"Linearity_Ramp_DLE",${waveDLE});
+    SMC_PUT_DEBUG(${awgPin},"Linearity_Ramp_ILE",${waveILE});
+     
+    // Data Logging
+    SMC_TEST(${awgPin}, "Linearity_Ramp_DLE", V93kLimits::tmLimits, ${waveDLE}[${linearity}.damax_index], true);
+    SMC_TEST(${awgPin}, "Linearity_Ramp_ILE", V93kLimits::tmLimits, ${waveILE}[${linearity}.iamax_index], true);
+    SMC_TEST(${awgPin}, "Linearity_Ramp_MissCode", V93kLimits::tmLimits, ${numberOfMissingCode}, true);
+  }
+  </template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_ADC_LinearitySine_SMCPostProcess">// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${vecVarForAwgPin},
+    const string ${resultArea},
+    const string ${awgPin})
+  {  	
+    ARRAY_D    ${waveDLE};       // DLE array,Diffrential Linearity Error [LSB]
+    ARRAY_D    ${waveILE};       // ILE array,Integral Linearity Error [LSB]
+    ARRAY_I    ${missingCodeData}(65536);  // Missing code data; OK for &lt;=16 bits  
+    int        ${numberOfMissingCode} = 0; // # of missing code
+    double ${dMissThresh}=0;         // Missing code decision count 
+    LINEARtype ${linearity};         // Linearity Result
+
+    // data upload  	
+    ARRAY_I ${adWave} = SMC_GET_VECTORS(${vecVarForAwgPin},${resultArea});// Captured data array
+    SMC_PUT_DEBUG(${awgPin},"Linearity_Sine",${adWave});
+    
+    // the waveform is supposed to overload the input range(typically 10% or more)
+    DSP_ADC_SINE_LINEAR(${adWave},&amp;${linearity},${waveDLE},${waveILE},&amp;${numberOfMissingCode},${missingCodeData},${dMissThresh});
+    SMC_PUT_DEBUG(${awgPin},"Linearity_Sine_DLE",${waveDLE});
+    SMC_PUT_DEBUG(${awgPin},"Linearity_Sine_ILE",${waveILE});
+ 
+    // Data Logging    
+    SMC_TEST(${awgPin}, "Linearity_Sine_DLE", V93kLimits::tmLimits, ${waveDLE}[${linearity}.damax_index], true);
+    SMC_TEST(${awgPin}, "Linearity_Sine_ILE", V93kLimits::tmLimits, ${waveILE}[${linearity}.iamax_index], true);
+    SMC_TEST(${awgPin}, "Linearity_Sine_MissCode", V93kLimits::tmLimits, ${numberOfMissingCode}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_ADC_MeasurementSetup">// Do measurement for ADC
+string ${awgPin} = "awgPin";
+string ${vecVarForAwgPin} = "vecForAwgPin";
+string ${resultArea} = "adcBitArea";
+int ${resultAreaSize} = 128000;
+string ${capturePinlist} = "dig1,dig2,dig3";
+static bool ${isResultAreaAllocated} = false;
+
+ON_FIRST_INVOCATION_BEGIN();
+  Routing.pin(${awgPin}).connect(TM::SINGLE);
+  Analog.AWG(${awgPin}).enable();
+        
+  //for optimal usage, the result area is allocated only once.
+  if (!${isResultAreaAllocated})
+  {
+    RESULT_AREA_CONFIG resultConfig(${capturePinlist});
+    resultConfig.appendArea(${resultArea},${resultAreaSize}).activateWithoutOverwrite();
+    ${isResultAreaAllocated} = true;
+  }
+  SMC_DIGITAL_CAPTURE_TEST(100 ms, ${resultArea});
+  
+  Analog.AWG(${awgPin}).disable();
+  Routing.pin(${awgPin}).disconnect();
+ON_FIRST_INVOCATION_END();
+
+// kick off upload and caculation
+SMC_ARM(${vecVarForAwgPin},${resultArea},${awgPin});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_BBtoRF_CarrierSuppressionImageRejection_Measure">//do measurement for base band to RF carrier suppression and image rejection test.
+string ${rfOutPin} = "RF2";
+string ${measName} = "BBtoRF_CI_Supp";
+ON_FIRST_INVOCATION_BEGIN();    
+  Analog.primary(${measName});
+  MEAS_DEF(${measName}).disableAll().connectAll();
+  EXECUTE_GROUP(${measName});
+  MEAS_DEF(${measName}).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+int ${siteNumber} = CURRENT_SITE_NUMBER();
+for (int i = 0; i &lt; ${mLOOPS}; i++)
+{
+  ${mMeasureParameters}[i] = MEAS_DEF(${measName}).getParameters(i+1, i);
+  ${mWaveformData}[i][${siteNumber}-1] = MEAS_DEF(${measName}).getComplexWaveform(i+1);
+} 
+SMC_ARM(${rfOutPin});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_BBtoRF_CarrierSuppressionImageRejection_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mLOOPS} = 3;
+  const static int ${mSITES} = 256;
+  ARRAY_D ${mMeasureParameters}[${mLOOPS}];
+  ARRAY_COMPLEX ${mWaveformData}[${mLOOPS}][${mSITES}];
+
+//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(const string ${rfOutPin})
+  {
+    double ${measuredPower}[${mLOOPS}+1] = {0,0,0,0};
+    double  ${carrierSuppression};
+    double  ${imageRejection};
+    int ${siteNum} = SMC_SITE_NUMBER();
+    for (int i = 0; i &lt; ${mLOOPS}; i++)
+    {
+      DSP_RF_CW_POWER(${mWaveformData}[i][${siteNum}-1], ${mMeasureParameters}[i],
+        ${siteNum}, &amp;${measuredPower}[i+1]); 
+    }    
+
+    ${carrierSuppression} = ${measuredPower}[3] - ${measuredPower}[2];
+    ${imageRejection} = ${measuredPower}[3] - ${measuredPower}[1];
+
+    //datalog
+    SMC_TEST(${rfOutPin}, "Lower_Side_Band_Power", V93kLimits::tmLimits, ${measuredPower}[1], true);
+    SMC_TEST(${rfOutPin}, "Carrier_Power", V93kLimits::tmLimits, ${measuredPower}[2], true);
+    SMC_TEST(${rfOutPin}, "Upper_Side_Band_Power", V93kLimits::tmLimits, ${measuredPower}[3], true);
+    SMC_TEST(${rfOutPin}, "Carrier_Suppression", V93kLimits::tmLimits, ${carrierSuppression}, true);
+    SMC_TEST(${rfOutPin}, "Image_Rejection", V93kLimits::tmLimits, ${imageRejection}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_BBtoRF_EVM_Measure">//do measurement for base band to RF EVM test
+string ${measName} = "Dot11bPout";
+string ${rfOutPin} = "RF2";
+static int ${numOfSamples};
+static double ${sampleRate};
+
+ON_FIRST_INVOCATION_BEGIN(); 
+  Analog.primary(${measName});
+  MEAS_DEF(${measName}).disable().connectAll();
+  EXECUTE_GROUP();    
+  
+  // get parameter for calculation
+  int ${sequencerBlock} = 1;
+  int ${listIndex} = 0;
+  ${mMeasureParameters} = MEAS_DEF(${measName}).getParameters(${sequencerBlock},${listIndex});
+  ${numOfSamples} = (int) ${mMeasureParameters}[TM::MEAS_NUM_SAMPLES];
+  ${sampleRate} = ${mMeasureParameters}[TM::MEAS_SAMPLE_RATE];
+  
+  MEAS_DEF(${measName}).disable().disconnectAll();
+ON_FIRST_INVOCATION_END(); 
+
+${mReceiveData}[CURRENT_SITE_NUMBER()-1] = MEAS_DEF(${measName}).getComplexWaveform();
+SMC_ARM(${rfOutPin}, ${sampleRate}, ${numOfSamples});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_BBtoRF_EVM_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES} = 256;
+  ARRAY_D ${mMeasureParameters};
+  ARRAY_COMPLEX ${mReceiveData}[${mSITES}];
+
+//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${rfOutPin},
+    const double ${sampleRate},
+    const int  ${numOfSamples})
+  {
+    double ${measuredEVM_rms}, ${measuredEVM_db};
+    float ${evmRMS};
+    double ${power} = 0;
+    int ${startBin} = 0, ${stopBin} = 0, ${binSize} = 0;
+    ARRAY_COMPLEX  ${measureResultTrace}, ${measureReferenceTrace};
+    ARRAY_D ${extspectrumData};
+    ARRAY_D ${spectrumData}(${numOfSamples});
+    int ${siteNum} = SMC_SITE_NUMBER();
+
+    // debug data   
+    SMC_PUT_DEBUG(${rfOutPin},"I Data",${mReceiveData}[${siteNum}-1].getReal());
+    SMC_PUT_DEBUG(${rfOutPin},"Q Data",${mReceiveData}[${siteNum}-1].getImag());
+    
+    DSP_RF_MOD_POWER(${mReceiveData}[${siteNum}-1],${mMeasureParameters}, DBM, ${siteNum},
+      &amp;${power},${spectrumData},&amp;${startBin},&amp;${stopBin});
+    ${binSize} = ${stopBin}-${startBin}+1;
+    DSP_EXTRACT(${spectrumData},${extspectrumData},${startBin},0,${binSize});
+    SMC_PUT_DEBUG(${rfOutPin},"RawSpectrum",${spectrumData});
+    SMC_PUT_DEBUG(${rfOutPin},"ExtSpectrum",${extspectrumData});
+
+    // use "WLAN_80211B" demodulation standard
+    DEMODULATION ${MeasEVM}(TM::EIGHT_ZERO_TWO_DOT_11B);
+    ${MeasEVM}.setInputParameter("outputPtsPerSymbol", 1);                
+    ${MeasEVM}.execute(${mReceiveData}[${siteNum}-1],${sampleRate});
+    ${MeasEVM}.getResult("evmRms", ${evmRMS});
+    
+    //calculate EVM in rms and db
+    ${measuredEVM_rms} = ${evmRMS};
+    ${measuredEVM_db} = 20*(log10(${evmRMS})-2);
+    
+    //debug data
+    ${MeasEVM}.getResult("measuredTrace",${measureResultTrace});
+    ${MeasEVM}.getResult("referenceTrace",${measureReferenceTrace});
+    SMC_PUT_DEBUG(${rfOutPin}, "TX_EVM Constellation Plot", ${MeasEVM}, TM::CONSTELLATION);
+    SMC_PUT_DEBUG(${rfOutPin},"MeasTrace",${measureResultTrace}.getReal(),${measureResultTrace}.getImag());
+    SMC_PUT_DEBUG(${rfOutPin},"RefTrace",${measureReferenceTrace}.getReal(),${measureReferenceTrace}.getImag());
+
+    //datalog
+    SMC_TEST(${rfOutPin}, "TX_EVM_rms", V93kLimits::tmLimits, ${measuredEVM_rms}, true); 
+    SMC_TEST(${rfOutPin}, "TX_EVM_db", V93kLimits::tmLimits, ${measuredEVM_db}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_BBtoRF_GainFlatnessModulate_Measure">//do measurement for base band to RF modulated gain flatness test 
+string ${rfOutPin} = "RF2";
+string ${measName} = "ModMeas3Tone";
+
+ON_FIRST_INVOCATION_BEGIN();
+  Analog.primary(${measName});                    
+  MEAS_DEF(${measName}).disableAll().connectAll(); 
+
+  EXECUTE_GROUP(${measName}); 
+  // get measurement setup for calculation
+  int ${frequencyListIndex};
+  MEAS_DEF(${measName}).get("FreqListIndex",${frequencyListIndex});
+  ${mMeasureParameters} = MEAS_DEF(${measName}).getParameters(1, ${frequencyListIndex});  
+
+  MEAS_DEF(${measName}).disableAll().disconnectAll(); 
+ON_FIRST_INVOCATION_END();
+
+${mReceiveData}[CURRENT_SITE_NUMBER()-1] = MEAS_DEF(${measName}).getComplexWaveform();
+SMC_ARM(${rfOutPin});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_BBtoRF_GainFlatnessModulate_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES} = 256;
+  ARRAY_D ${mMeasureParameters};
+  ARRAY_COMPLEX ${mReceiveData}[${mSITES}];
+
+//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(const string ${rfOutPin})
+  {
+    const double ${offsetBetweenTones_Hz} = 95000;
+    double ${output}[3];
+    double ${gainFlatnessLow}, ${gainFlatnessHigh};
+    int ${binFrequency1}, ${binFrequency2}, ${binFrequency3};
+    double ${outputPower};
+    int ${numberOfSamples} = (int) ${mMeasureParameters}[TM::MEAS_NUM_SAMPLES];
+    double ${sampleFreq} = (double) ${mMeasureParameters}[TM::MEAS_SAMPLE_RATE];
+    ARRAY_D ${spectrumData}(${numberOfSamples}); 
+    int ${siteNum} = SMC_SITE_NUMBER();
+     
+    // obtain signal power
+    int ${dummyStartBin}, ${dummyStopBin};
+    DSP_RF_MOD_POWER(${mReceiveData}[${siteNum}-1], ${mMeasureParameters}, 
+      DBM, ${siteNum}, &amp;${outputPower}, ${spectrumData}, &amp;${dummyStartBin},&amp;${dummyStopBin});
+    
+    // calculate frequency resolution
+    ${binFrequency1} = (int) ${numberOfSamples}/2; 
+    ${binFrequency2} = (int) (${numberOfSamples}/2 + (${numberOfSamples}/${sampleFreq}) * ${offsetBetweenTones_Hz}); 
+    ${binFrequency3} = (int) (${numberOfSamples}/2 + (${numberOfSamples}/${sampleFreq}) * 2*${offsetBetweenTones_Hz}); 
+    
+    // in case of PLL no perfectly locked, look for maximum bin
+    double max_temp1 = -999 ;
+    double max_temp2 = -999 ;
+    double max_temp3 = -999 ;
+    int FBinFreq1, FBinFreq2, FBinFreq3;
+    for (int i = -5 ; i &lt;= 5; i++ )
+    {
+      double temp_val1 = ${spectrumData}[${binFrequency1} + i] ;
+      double temp_val2 = ${spectrumData}[${binFrequency2} + i] ;
+      double temp_val3 = ${spectrumData}[${binFrequency3} + i] ;
+      if ( temp_val1 &gt; max_temp1 )
+      {
+        max_temp1 = temp_val1 ;
+        FBinFreq1 = i ;
+      }
+      if ( temp_val2 &gt; max_temp2 )
+      {
+        max_temp2 = temp_val2 ;
+        FBinFreq2 = i ;
+      }
+      if ( temp_val3 &gt; max_temp3 )
+      {
+        max_temp3 = temp_val3 ;
+        FBinFreq3 = i ;
+      }
+    }
+    ${binFrequency1} += FBinFreq1 ;      
+    ${binFrequency2} += FBinFreq2 ;      
+    ${binFrequency3} += FBinFreq3 ;   
+    
+    ${output}[0] = ${spectrumData}[${binFrequency1}];
+    ${output}[1] = ${spectrumData}[${binFrequency2}];
+    ${output}[2] = ${spectrumData}[${binFrequency3}];
+    
+    // calculate gain flatness
+    ${gainFlatnessLow} = ${output}[1] - ${output}[0];
+    ${gainFlatnessHigh} = ${output}[1] - ${output}[2];
+     
+    // datalog
+    SMC_TEST(${rfOutPin}, "Gain_flatness_lo", V93kLimits::tmLimits, ${gainFlatnessLow}, true);
+    SMC_TEST(${rfOutPin}, "Gain_flatness_hi", V93kLimits::tmLimits, ${gainFlatnessHigh}, true);
+  }  </template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_BBtoRF_RefSpurs_Measure">//do measurement for base band to RF TX reference spurs test.
+string ${rfOutPin} = "RF2";
+string ${measName} = "BBtoRF_TXRefSpurs";
+ON_FIRST_INVOCATION_BEGIN();    
+  Analog.primary(${measName});
+  MEAS_DEF(${measName}).disableAll().connectAll();
+  EXECUTE_GROUP(${measName});
+  for (int i = 0; i &lt; ${mLOOPS}; i++)
+  {
+    ${mMeasureParameters}[i] = MEAS_DEF(${measName}).getParameters(i+1, i);
+  }
+
+  MEAS_DEF(${measName}).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+for (int i = 0; i &lt; ${mLOOPS}; i++)
+{
+  ${mReceiveData}[i][CURRENT_SITE_NUMBER()-1] = MEAS_DEF(${measName}).getComplexWaveform(i+1);
+}
+SMC_ARM(${rfOutPin});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_BBtoRF_RefSpurs_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mLOOPS} = 3;
+  const static int ${mSITES}= 256;
+  ARRAY_D ${mMeasureParameters}[${mLOOPS}];
+  ARRAY_COMPLEX ${mReceiveData}[${mLOOPS}][${mSITES}];
+
+//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(const string ${rfOutPin})
+  {
+    double ${measuredPower}[${mLOOPS}+1] = {0,0,0,0};
+    double ${PLL_Spurs_Pos};
+    double ${PLL_Spurs_Neg};
+    int ${siteNum} = SMC_SITE_NUMBER();
+    for (int i = 0; i &lt; ${mLOOPS}; i++)
+    {
+      DSP_RF_CW_POWER(${mReceiveData}[i][${siteNum}-1], ${mMeasureParameters}[i], 
+        ${siteNum}, &amp;${measuredPower}[i+1]);     
+    }
+
+    ${PLL_Spurs_Neg} = ${measuredPower}[2] - ${measuredPower}[1];
+    ${PLL_Spurs_Pos} = ${measuredPower}[2] - ${measuredPower}[3]
+                                                     ;
+    //datalog
+    SMC_TEST(${rfOutPin}, "PLL_Lower_Spurs", V93kLimits::tmLimits, ${measuredPower}[1], true);
+    SMC_TEST(${rfOutPin}, "PLL_Upper_Spurs", V93kLimits::tmLimits, ${measuredPower}[3], true);
+    SMC_TEST(${rfOutPin}, "PLL_Spurs_Neg", V93kLimits::tmLimits, ${PLL_Spurs_Neg}, true);
+    SMC_TEST(${rfOutPin}, "PLL_Spurs_Pos", V93kLimits::tmLimits, ${PLL_Spurs_Pos}, true);
+    SMC_TEST(${rfOutPin}, "Carrier_Power", V93kLimits::tmLimits, ${measuredPower}[2], true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_BBtoRF_SpectrumMask_Measure">//do measurement for base band to RF spectrum mask test 
+string ${rfOutPin} = "RF2";
+string ${measName} = "Dot11bSpectMask";
+
+ON_FIRST_INVOCATION_BEGIN();  
+  Analog.primary(${measName});
+  MEAS_DEF(${measName}).disable().connectAll();
+  
+  EXECUTE_GROUP();  
+  
+  // get setup parameter for calculation 
+  ${mMeasureParametersLowerSide} = MEAS_DEF(${measName}).getParameters(1,0); 
+  ${mMeasureParametersUpperSide} = MEAS_DEF(${measName}).getParameters(2,1); 
+
+  MEAS_DEF(${measName}).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+int ${siteNumber} = CURRENT_SITE_NUMBER();
+${mReceiveDataLowerSide}[${siteNumber}-1] = MEAS_DEF(${measName}).getComplexWaveform(1);
+${mReceiveDataUpperSide}[${siteNumber}-1] = MEAS_DEF(${measName}).getComplexWaveform(2);
+SMC_ARM(${rfOutPin});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_BBtoRF_SpetrumMask_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES}= 256;
+  ARRAY_D ${mMeasureParametersLowerSide};
+  ARRAY_D ${mMeasureParametersUpperSide};
+  ARRAY_COMPLEX ${mReceiveDataLowerSide}[${mSITES}];
+  ARRAY_COMPLEX ${mReceiveDataUpperSide}[${mSITES}];
+
+//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(const string ${rfOutPin}) 
+  {
+    int ${numOfSamples} = (int) ${mMeasureParametersLowerSide}[TM::MEAS_NUM_SAMPLES];
+    double ${sampleRate} = ${mMeasureParametersLowerSide}[TM::MEAS_SAMPLE_RATE];
+    double ${measBandwidth} = ${mMeasureParametersLowerSide}[TM::MEAS_BANDWIDTH];
+    
+    double ${spectMask00_11},${spectMask11_22},${spectMask22_44},${spectMask44_55},${spectMask55_66};
+
+    double ${lowerSidePower} = 0, ${upperSidePower} = 0;
+    int ${lowerSideStartBin} = 0, ${lowerSideStopBin} = 0;
+    int ${upperSideStartBin} = 0, ${upperSideStopBin} = 0;
+    ARRAY_D ${lowerSideSpectrum}(${numOfSamples});
+    ARRAY_D ${upperSideSpectrum}(${numOfSamples});
+    ARRAY_D ${lowerSideSpectrum_extract}, ${upperSideSpectrum_extract};
+    ARRAY_D ${totalSpectrum};
+    int ${sizeOfTotalSpectrum};
+    int ${lowerSideBinSize}, ${upperSideBinSize};
+    int ${siteNum} = SMC_SITE_NUMBER();
+    
+    DSP_RF_MOD_POWER(${mReceiveDataLowerSide}[${siteNum}-1],
+      ${mMeasureParametersLowerSide}, DBM, ${siteNum}, 
+      &amp;${lowerSidePower},${lowerSideSpectrum},&amp;${lowerSideStartBin},&amp;${lowerSideStopBin});
+
+    DSP_RF_MOD_POWER(${mReceiveDataUpperSide}[${siteNum}-1],
+      ${mMeasureParametersUpperSide}, DBM, ${siteNum}, 
+      &amp;${upperSidePower},${upperSideSpectrum},&amp;${upperSideStartBin},&amp;${upperSideStopBin});
+    
+    ${lowerSideBinSize} = ${lowerSideStopBin} - ${lowerSideStartBin};
+    ${upperSideBinSize} = ${upperSideStopBin} - ${upperSideStartBin};
+    DSP_EXTRACT(${lowerSideSpectrum}, ${lowerSideSpectrum_extract}, ${lowerSideStartBin}, 0, ${lowerSideBinSize}); 
+    DSP_EXTRACT(${upperSideSpectrum}, ${upperSideSpectrum_extract}, ${upperSideStartBin}, 0, ${upperSideBinSize}); 
+
+    // merge Lower Side Spectrum and Upper Side Spectrum into Whole Spectrum
+    DSP_EXTRACT(${lowerSideSpectrum}, ${totalSpectrum}, ${lowerSideStartBin}, 0, ${lowerSideBinSize});
+    DSP_EXTRACT(${upperSideSpectrum}, ${totalSpectrum}, ${upperSideStartBin}, ${upperSideBinSize}, ${upperSideBinSize});  
+    
+    // convert dBm to Watt Scale for Averaging 
+    ARRAY_D tmpArray;
+    ARRAY_D ${mwattsArray};
+    DSP_MUL_SCL(0.1, ${totalSpectrum}, tmpArray);
+    DSP_EXP10_VEC(tmpArray,${mwattsArray});
+  
+    /*
+     *  -- Specification for Peak Search --
+     * Resolution Band Width for Spectrum Mask Test, fixed value due to IEEE802.11B Specification.
+     * Peak Search Range = Fc +/- dFband, max value shoud be equal to or smaller than 11MHz. 
+     */
+    double ${dRBW} = 100 kHz; 
+    double ${dFband} = 11 MHz;                          
+    double ${dFrsln} = ${sampleRate}/${numOfSamples};
+                                           
+    // calcurate Average Length for Moving Average DSP   
+    int ${iRBW};
+    int ${iRBW_half};
+    ${iRBW} = (int)(${dRBW}/${dFrsln} + 0.5); 
+    if((int)(${iRBW}/2)*2==${iRBW})
+    {
+      ${iRBW} += 1;
+    }
+    ${iRBW_half} = (int)(${iRBW}/2);
+  
+    /*------------------------------------------------------------------------------
+     * NOTE:
+     * If iRBW is even number, make it odd.
+     * Band width is changed wider to make odd bin number.
+     * It is reasonable for testing condition to be changed tinght rather than loose.
+     *     
+     * avaraging even number  ---&gt; no clear center bin
+     *             center
+     *       +-------|-------+
+     *  o o o X X X X X X X X o o o o
+     * 
+     * avaraging odd number  ---&gt; clear center bin
+     *              center
+     *       +--------|--------+
+     *  o o o X X X X C X X X X o o o
+     * 
+     * It is better to set EVEN avarage length in terms of frequency bin
+     * keeping frequency informaiton.
+     * -----------------------------------------------------------------------------
+     */  
+    
+    // detect Peak of Main Lobe , Detection Range = Fc+/- ${dFband} 
+    int ${iband_findmax_half};
+    ${iband_findmax_half} = (int)(${dFband}/${dFrsln} + 0.5);
+    int ${iavg_sta}, ${iavg_end};
+    ARRAY_D mwattsArray_avg_src, mwattsArray_avg, mwattsArray_sum;
+    
+    ${sizeOfTotalSpectrum} = ${totalSpectrum}.size();          
+    ${iavg_sta} = (int)(${sizeOfTotalSpectrum}/2) - ${iband_findmax_half};
+    ${iavg_end} = (int)(${sizeOfTotalSpectrum}/2) + ${iband_findmax_half};
+
+    double ${dmin}, ${dmax};
+    int ${imin_index}, ${imax_index};
+    double ${dLevel_max_dBm};
+    
+    DSP_EXTRACT(${mwattsArray},mwattsArray_avg_src,${iavg_sta}-${iRBW_half},0,1+2*${iband_findmax_half}+2*${iRBW_half});
+    // average around peak
+    DSP_MOVAVG(mwattsArray_avg_src,mwattsArray_avg,${iRBW}); 
+    // average --&gt; summation
+    DSP_MUL_SCL(${iRBW},mwattsArray_avg,mwattsArray_sum);    
+    // find peak
+    DSP_MINMAX(mwattsArray_sum,&amp;${dmin},&amp;${dmax},&amp;${imin_index},&amp;${imax_index}); 
+    // peak power level (dBm)
+    ${dLevel_max_dBm} = 10*log10(${dmax});        
+
+    // freqeuncy Offset for Spectrum Mask Test Specification
+    double ${dot11b_halfBW} = 33 MHz; // half of total required BW 66MHz
+    double ${freq11} = 11 MHz;
+    double ${freq22} = 22 MHz;
+    double ${freq33} = 33 MHz;
+    double ${freq44} = 44 MHz;
+    double ${freq55} = 55 MHz;
+    double ${freq66} = 66 MHz;  
+    
+    // calculate frequency offset on actual bandwidth      
+    ${freq11} = ${freq11} + (${measBandwidth} - ${dot11b_halfBW});
+    ${freq22} = ${freq22} + (${measBandwidth} - ${dot11b_halfBW});
+    ${freq33} = ${freq33} + (${measBandwidth} - ${dot11b_halfBW});
+    ${freq44} = ${freq44} + (${measBandwidth} - ${dot11b_halfBW});
+    ${freq55} = ${freq55} + (${measBandwidth} - ${dot11b_halfBW});
+    ${freq66} = ${freq66} + (${measBandwidth} - ${dot11b_halfBW});
+    
+    // calculate Freq bin on actual bandwidth  
+    int ${idex11},${idex22},${idex33},${idex44},${idex55},${idex66};
+    int ${idex_orign} =(int)((${measBandwidth}-${dot11b_halfBW})/${dFrsln});
+    ${idex11} = (int)(${freq11}/${dFrsln});
+    ${idex22} = (int)(${freq22}/${dFrsln});
+    ${idex33} = (int)(${freq33}/${dFrsln});
+    ${idex44} = (int)(${freq44}/${dFrsln});
+    ${idex55} = (int)(${freq55}/${dFrsln});
+    ${idex66} = (int)(${freq66}/${dFrsln});
+
+   // Extract and Average m-Watts array in each offset range  
+    ARRAY_D ${D11},${D22},${D44},${D55},${D66};
+    ARRAY_D ${D11avg},${D22avg},${D44avg},${D55avg},${D66avg};
+    ARRAY_D ${D11sum},${D22sum},${D44sum},${D55sum},${D66sum};
+    
+    // create array for fc-33MHz to fc-22MHz
+    DSP_EXTRACT(${mwattsArray},${D11},${idex_orign},0,${idex11});
+    // create array for fc-22MHz to fc-11MHz
+    DSP_EXTRACT(${mwattsArray},${D22},${idex11},0,${idex22}-${idex11}+3); 
+    // create array for fc-11MHz to fc+11MHz
+    DSP_EXTRACT(${mwattsArray},${D44},${idex22}+3,0,${idex44}-${idex22}-3); 
+    // create array for fc+11MHz to fc+22MHz
+    DSP_EXTRACT(${mwattsArray},${D55},${idex44}-3,0,${idex55}-${idex44});   
+    // create array for fc+22MHz to fc+33MHz
+    DSP_EXTRACT(${mwattsArray},${D66},${idex55},0,${idex66}-${idex55});     
+    
+    // do average  
+    DSP_MOVAVG(${D11},${D11avg},${iRBW}); 
+    DSP_MOVAVG(${D22},${D22avg},${iRBW}); 
+    DSP_MOVAVG(${D44},${D44avg},${iRBW}); 
+    DSP_MOVAVG(${D55},${D55avg},${iRBW}); 
+    DSP_MOVAVG(${D66},${D66avg},${iRBW});  
+    
+    // do summation averaged power
+    DSP_MUL_SCL(${iRBW},${D11avg},${D11sum});  
+    DSP_MUL_SCL(${iRBW},${D22avg},${D22sum});  
+    DSP_MUL_SCL(${iRBW},${D44avg},${D44sum});  
+    DSP_MUL_SCL(${iRBW},${D55avg},${D55sum}); 
+    DSP_MUL_SCL(${iRBW},${D66avg},${D66sum});  
+   
+    
+    /*
+     * Find max. power(mW) and it's index within each offset range. 
+     * Calc relative power (dB) to signal peak level.
+     * Test Specification is as following 
+     * fc-33MHz to fc-22MHz &amp; fc+22MHz to fc+33MHz : &gt; 50dB    
+     * fc-22MHz to fc-11MHz &amp; fc+11MHz to fc+22MHz : &gt; 30dB
+     * fc +/-11MHz : =&lt; 0 
+     */
+ 
+    double  ${dDrop_dB}, ${dMax_dBm};
+    // fc-33MHz to fc-22MHz
+    DSP_MINMAX(${D11sum},&amp;${dmin},&amp;${dmax},&amp;${imin_index},&amp;${imax_index});
+    ${dMax_dBm} = 10*log10(${dmax});        // dBm
+    ${dDrop_dB} = ${dLevel_max_dBm} - ${dMax_dBm};
+    ${spectMask00_11} = ${dDrop_dB};
+    // fc-22MHz to fc-11MHz
+    DSP_MINMAX(${D22sum},&amp;${dmin},&amp;${dmax},&amp;${imin_index},&amp;${imax_index});
+    ${dMax_dBm} = 10*log10(${dmax});        // dBm
+    ${dDrop_dB} = ${dLevel_max_dBm} - ${dMax_dBm};
+    ${spectMask11_22} = ${dDrop_dB};
+    // fc+/-11MHz, mail lobe
+    DSP_MINMAX(${D44sum},&amp;${dmin},&amp;${dmax},&amp;${imin_index},&amp;${imax_index});
+    ${dMax_dBm} = 10*log10(${dmax});        // dBm
+    ${dDrop_dB} = ${dLevel_max_dBm} - ${dMax_dBm};
+    ${spectMask22_44} = ${dDrop_dB};
+    // fc+11MHz to fc+22MHz
+    DSP_MINMAX(${D55sum},&amp;${dmin},&amp;${dmax},&amp;${imin_index},&amp;${imax_index});
+    ${dMax_dBm} = 10*log10(${dmax});        // dBm
+    ${dDrop_dB} = ${dLevel_max_dBm} - ${dMax_dBm};
+    ${spectMask44_55} = ${dDrop_dB};
+    // fc+22MHz to fc+33MHz
+    DSP_MINMAX(${D66sum},&amp;${dmin},&amp;${dmax},&amp;${imin_index},&amp;${imax_index});
+    ${dMax_dBm} = 10*log10(${dmax});        // dBm
+    ${dDrop_dB} = ${dLevel_max_dBm} - ${dMax_dBm};
+    ${spectMask55_66} = ${dDrop_dB};
+    
+    // datalog
+    SMC_TEST(${rfOutPin}, "SpectMask_L2", V93kLimits::tmLimits, ${spectMask00_11}, true);
+    SMC_TEST(${rfOutPin}, "SpectMask_L1", V93kLimits::tmLimits, ${spectMask11_22}, true);
+    SMC_TEST(${rfOutPin}, "SpectMask_FC", V93kLimits::tmLimits, ${spectMask22_44}, true);
+    SMC_TEST(${rfOutPin}, "SpectMask_U1", V93kLimits::tmLimits, ${spectMask44_55}, true);
+    SMC_TEST(${rfOutPin}, "SpectMask_U2", V93kLimits::tmLimits, ${spectMask55_66}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_CODEC_GAINDISTORTION_SMCPostProcess">//put this function as a memeber of test method class  
+public:
+  void SMC_backgroundProcessing(
+    const string ${adcPin}, 
+    const string ${adcResultArea},
+    const double ${adcSampleFreq},
+    const string ${dacPin},
+    const string ${dacHandleName},
+    const double ${dacSampleFreq})
+  {
+    string ${vecVarName} = "vv_VB_AD_cap512x2";
+    int ${numberOfSingalCycles} = 11;
+    string ${codeFormat} = "COMP2";
+    double ${adcRefLevel} = 8388610;
+  
+    int ${numberOfSegmentADCCapturedWaveform} = 2;
+    int ${sizePerSegmentADCCapturedWaveform} = 512;
+    int ${numberOfSegmentDACDGTWaveform} = 2;          
+    int ${sampleSizePerSegmentDACDGTWaveform} = 512;
+    int ${initialDiscardPerSegmentDACDGTWaveform} = 128;
+    int ${postDiscardPerSegmentDACDGTWaveform} = 128;
+    int ${sizePerSegmentDACDGTWaveform} = 
+          ${sampleSizePerSegmentDACDGTWaveform}
+          + ${initialDiscardPerSegmentDACDGTWaveform}
+          + ${postDiscardPerSegmentDACDGTWaveform} ;
+    
+    //do ADC upload and calculation
+    const ARRAY_I&amp; ${adcWaveResult} = SMC_GET_VECTORS(${vecVarName}, ${adcResultArea}, -1, -1, 0, ${codeFormat});
+    SMC_PUT_DEBUG(${adcPin}, "ADC Waveform", ${adcWaveResult});
+    ARRAY_I ${ADCwave}[${numberOfSegmentADCCapturedWaveform}];
+    THDtype ${adcResult}[${numberOfSegmentADCCapturedWaveform}];
+    
+    ostringstream ${waveName};
+    for (int i = 0; i &lt; ${numberOfSegmentADCCapturedWaveform}; i++)
+    {
+      DSP_EXTRACT(${adcWaveResult}, ${ADCwave}[i], 
+        i*${sizePerSegmentADCCapturedWaveform}, 0, ${sizePerSegmentADCCapturedWaveform});
+      
+      DSP_THD(${ADCwave}[i], &amp;${adcResult}[i], ${numberOfSingalCycles}, 5, DB, 0);
+      
+      ${waveName}.str("");
+      ${waveName} &lt;&lt; "ADCWave_" &lt;&lt; i;
+      SMC_PUT_DEBUG(${adcPin}, ${waveName}.str() , ${ADCwave}[i]);                
+    }                    
+
+    //do DAC upload and calculation 
+    ARRAY_D ${DACwave}[${numberOfSegmentDACDGTWaveform}];
+    THDtype ${dacResult}[${numberOfSegmentDACDGTWaveform}];
+    
+    const ARRAY_D ${dacWaveResult} = SMC_GET_WAVEFORM(${dacPin}, ${dacHandleName}, 1);
+    for (int i = 0; i &lt; ${numberOfSegmentDACDGTWaveform}; i++)
+    {
+      DSP_EXTRACT(${dacWaveResult} ,${DACwave}[i], (${initialDiscardPerSegmentDACDGTWaveform} + ${sizePerSegmentDACDGTWaveform})*i, 
+        0, ${sampleSizePerSegmentDACDGTWaveform});
+      
+      DSP_THD(${DACwave}[i], &amp;${dacResult}[i], ${numberOfSingalCycles}, 5, DB, 0);        
+    }
+    
+    //ADC datalog
+    SMC_TEST(${adcPin}, "VB_ADC_GainDist_30_gain_R", V93kLimits::tmLimits, ${adcResult}[0].signal -20*log10(${adcRefLevel}), true); 
+    SMC_TEST(${adcPin}, "VB_ADC_GainDist_30_snd_R", V93kLimits::tmLimits, ${adcResult}[0].snd, true);
+    SMC_TEST(${adcPin}, "VB_ADC_GainDist_30_h2_R", V93kLimits::tmLimits, ${adcResult}[0].h2, true);
+    SMC_TEST(${adcPin}, "VB_ADC_GainDist_30_h3_R", V93kLimits::tmLimits, ${adcResult}[0].h3, true);
+    SMC_TEST(${adcPin}, "VB_ADC_GainDist_1_gain_R", V93kLimits::tmLimits, ${adcResult}[1].signal -20*log10(${adcRefLevel}), true);
+    SMC_TEST(${adcPin}, "VB_ADC_GainDist_1_snd_R", V93kLimits::tmLimits, ${adcResult}[1].snd, true);
+    SMC_TEST(${adcPin}, "VB_ADC_GainDist_1_h2_R", V93kLimits::tmLimits, ${adcResult}[1].h2, true);
+    SMC_TEST(${adcPin}, "VB_ADC_GainDist_1_h3_R", V93kLimits::tmLimits, ${adcResult}[1].h3, true);
+
+    //DAC datalog
+    SMC_TEST(${dacPin}, "VB_DAC_GainDist_30_gain_R", V93kLimits::tmLimits, ${dacResult}[0].signal, true);
+    SMC_TEST(${dacPin}, "VB_DAC_GainDist_30_snd_R", V93kLimits::tmLimits, ${dacResult}[0].snd, true);
+    SMC_TEST(${dacPin}, "VB_DAC_GainDist_30_h2_R", V93kLimits::tmLimits, ${dacResult}[0].h2, true);
+    SMC_TEST(${dacPin}, "VB_DAC_GainDist_30_h3_R", V93kLimits::tmLimits, ${dacResult}[0].h3, true);
+    SMC_TEST(${dacPin}, "VB_DAC_GainDist_1_gain_R", V93kLimits::tmLimits, ${dacResult}[1].signal, true);
+    SMC_TEST(${dacPin}, "VB_DAC_GainDist_1_snd_R", V93kLimits::tmLimits, ${dacResult}[1].snd, true);
+    SMC_TEST(${dacPin}, "VB_DAC_GainDist_1_h2_R", V93kLimits::tmLimits, ${dacResult}[1].h2, true);
+    SMC_TEST(${dacPin}, "VB_DAC_GainDist_1_h3_R", V93kLimits::tmLimits, ${dacResult}[1].h3, true);
+
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_CODEC_ICN_SMCPostProcess">//put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${adcPin},
+    const string ${adcResultArea},
+    const double ${adcSampleFreq}, 
+    const string ${dacPin}, 
+    const string ${resultHandle},
+    const double ${dacSampleFreq})
+  {
+    double ${adcICN} = 0;
+    double ${dacICN} = 0;
+    
+    int ${adcRefLevel} = 8388608;
+    string ${vecVarName} = "vectorVariable_ICN";
+    double  ${adcSND} = 0 , ${adcSignalPower} = 0, ${adcOtherPower} = 0;
+    int ${adcCycle} = 1; 
+    double  ${dacSND} = 0, ${dacSignalPower} = 0,${dacOtherPower } = 0;
+    int ${dacCycle} = 1;
+    double ${dacRefLevel} = 1.414;
+    ARRAY_D ${adcSpectR};
+    ARRAY_D ${dacFilter};
+    
+    //do calculation ADC 
+    const ARRAY_I&amp; ${adcWaveResult} = SMC_GET_VECTORS(${vecVarName},${adcResultArea});
+    
+    ARRAY_D ${adcFilter}(${adcWaveResult}.size()/2);
+    //use A_WEIGHTING filter
+    DSP_ASSIGN_FILTER(${adcFilter}, ${adcSampleFreq}, A_WEIGHTING);
+
+    //use DSP_SND to calculate the total power
+    DSP_SND(${adcWaveResult}, &amp;${adcSND}, &amp;${adcSignalPower}, &amp;${adcOtherPower}, ${adcCycle}, ${adcRefLevel}, ${adcFilter});
+    ${adcICN} = 10 * log10( pow(10,${adcSignalPower}/10) + pow(10, ${adcOtherPower}/10) );
+
+    //debug wave
+    SMC_PUT_DEBUG(${adcPin}, "ICN ADC wave", ${adcWaveResult});
+    DSP_SPECTRUM(${adcWaveResult},${adcSpectR},DB,${adcRefLevel},RECT,0);
+    SMC_PUT_DEBUG(${adcPin}, "ICN ADC spect", ${adcSpectR});
+    
+    //do calculation DAC    
+    ARRAY_D ${dacWaveR} = SMC_GET_WAVEFORM(${dacPin},${resultHandle},1);
+
+    //define DAC filter with A-rule
+    ${dacFilter}.resize(${dacWaveR}.size()/2);
+    DSP_ASSIGN_FILTER(${dacFilter}, ${dacSampleFreq}, A_WEIGHTING);
+    
+    DSP_SND(${dacWaveR}, &amp;${dacSND}, &amp;${dacSignalPower}, &amp;${dacOtherPower}, ${dacCycle}, ${dacRefLevel}, ${dacFilter});
+    ${dacICN} = 10 * log10( pow(10,${dacSignalPower}/10) + pow(10, ${dacOtherPower}/10) );
+
+    //do datalog   
+    SMC_TEST(${adcPin}, "VB_ADC_ICN", V93kLimits::tmLimits, ${adcICN}, true);
+    SMC_TEST(${dacPin}, "VB_DAC_ICN", V93kLimits::tmLimits, ${dacICN}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_CODEC_MeasurementSetup">//do measurement for CODEC
+string ${adcPin} = "AWGmca_VINR";
+string ${dacPin} = "DGTmca_VOUTR";
+string ${dacHandleName} = "DACTest";
+string ${adcResultArea} = "ADCTest";
+string ${digitalCapPinlist} = "VB_OSDATA";
+
+/*ResultAreaSize = NumberOfSampels/SamplesPerByte + 1024
+ *NumberOfSampes = totalCaptures * x-mode, including discared points.
+ *SamplesPerByte = 4 (x1 or x2 mode) or 8 (x4 or x8 mode)
+ */
+int ${adcResultAreaSize} = 4096 / 4 + 1024;
+static bool ${isResultAreaAllocated} = false;
+static double ${adcSampleFreq};
+static double ${dacSampleFreq};
+     
+ON_FIRST_INVOCATION_BEGIN();
+  Routing.pin(${adcPin}).connect(TM::SINGLE);
+  Routing.pin(${dacPin}).connect(TM::SINGLE);
+  AWG(${adcPin}).enable();
+  DGT(${dacPin}).enable();
+
+  //for optimal usage, the result area is allocated only once.
+  if (!${isResultAreaAllocated})
+  {
+    RESULT_AREA_CONFIG ${digitalCaptureResultConfig}(${digitalCapPinlist});
+    ${digitalCaptureResultConfig}.appendArea(${adcResultArea},${adcResultAreaSize})
+                              .activateWithoutOverwrite();
+    ${isResultAreaAllocated} = true;
+  }     
+  Analog.requestResultHandle(${dacHandleName});
+      
+  SMC_DIGITAL_CAPTURE_TEST(1.0 sec,${adcResultArea});
+
+  ${adcSampleFreq} = AWG(${adcPin}).getFrequency();
+  ${dacSampleFreq} = DTG(${dacPin}).getFrequency();
+ 
+  AWG(${adcPin}).disable();
+  DGT(${dacPin}).disable();
+  Routing.pin(${adcPin}).disconnect();
+  Routing.pin(${dacPin}).disconnect();
+ON_FIRST_INVOCATION_END();
+
+//kick off upload and calculation
+SMC_ARM(${adcPin}, ${adcResultArea}, ${adcSampleFreq}, ${dacPin}, ${dacHandleName}, ${dacSampleFreq});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_CODEC_PSRR_SMCPostProcess">//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${adcPin},
+    const string ${adcResultArea},
+    const double ${adcSampleFreq},
+    const string ${dacPin},
+    const string ${dacResultHandle},
+    const double ${dacSampleFreq})
+  {   
+    string ${vecVarName} = "vectorVariable_PSRR";
+    double ${modAmplitude} = 0.15;
+    double ${adcFullScaleAmp} = 1.414;
+    int ${adcNumBits} = 24;
+    int ${mCycle} = 21;
+    double ${adcPSRR} = 0;
+    double ${dacPSRR} = 0;
+    ARRAY_D ${adcSpec};
+    ARRAY_D ${dacSpec};
+    
+    //do calculation ADC
+    double ${adcModRefLevel} = ${modAmplitude}/${adcFullScaleAmp}*pow(2.0,(double)${adcNumBits})/2;
+    const ARRAY_I&amp; ${adcWaveResult} = SMC_GET_VECTORS(${vecVarName},${adcResultArea});
+    SMC_PUT_DEBUG(${adcPin}, "PSRR ADC wave", ${adcWaveResult});
+    DSP_SPECTRUM(${adcWaveResult},${adcSpec},DB,${adcModRefLevel},RECT,0);
+    SMC_PUT_DEBUG(${adcPin}, "PSRR ADC spect", ${adcSpec});
+    ${adcPSRR} = ${adcSpec}[${mCycle}];
+
+    //do calculation DAC   
+    const ARRAY_D&amp; ${dacWaveResult} = SMC_GET_WAVEFORM(${dacPin},${dacResultHandle},1);
+    SMC_PUT_DEBUG(${adcPin}, "PSRR DAC wave", ${adcWaveResult});
+    DSP_SPECTRUM(${dacWaveResult},${dacSpec},DB,${modAmplitude},RECT,0); 
+    SMC_PUT_DEBUG(${adcPin}, "PSRR DAC spect", ${adcSpec});
+    ${dacPSRR} = ${dacSpec}[${mCycle}];
+     
+    //datalog
+    SMC_TEST(${adcPin}, "VB_ADC_PSRR", V93kLimits::tmLimits, ${adcPSRR}, true);
+    SMC_TEST(${dacPin}, "VB_DAC_PSRR", V93kLimits::tmLimits, ${dacPSRR}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DAC_Distortion_SMCPostProcess">// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${resultHandle},
+    const string ${dgtPin})
+  {  	
+    int ${numberOfHarmonics} = 3; //Harmonics number to be calculated for THD
+    int ${numberOfCycle} = 21; //Cycle number of the fundermental signal  
+  	  
+    THDtype ${thdResult}; //SNR,SND,THD,H2,H3
+    ARRAY_D ${daWave} = SMC_GET_WAVEFORM(${dgtPin},${resultHandle},1);
+  	
+    // full bandwidth, get the distortion    
+    DSP_THD(${daWave},&amp;${thdResult},${numberOfCycle},${numberOfHarmonics},DB,0);    	    
+
+    SMC_PUT_DEBUG(${dgtPin},"waveform",${daWave});
+    
+    //  Data Logging
+    SMC_TEST(${dgtPin}, "snr", V93kLimits::tmLimits, ${thdResult}.snr, true);
+    SMC_TEST(${dgtPin}, "thd", V93kLimits::tmLimits, ${thdResult}.thd, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DAC_Edge_SMCPostProcess">// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${resultHandle},
+    const string ${dgtPin_I},
+    const string ${dgtPin_Q})
+  {  	
+    // digitizer data upload
+    ARRAY_COMPLEX ${daWave} = SMC_GET_COMPLEX_WAVEFORM(${dgtPin_I},${resultHandle},1);
+    ARRAY_D ${daWave_I} = ${daWave}.getReal();
+    ARRAY_D ${daWave_Q} = ${daWave}.getImag();   
+   
+    // EDGE EVM calculation
+    double ${frequency} = DGT(${dgtPin_I}).getFrequency()/(1+DGT(${dgtPin_I}).getInterDiscard()); 
+    int   ${numSymbols} = 200; // number of symbols to be calculated 
+    int   ${demod_size} = ${daWave_I}.size();
+    ARRAY_COMPLEX ${edge_IQ}( ${demod_size} );
+    for(int i=0; i&lt; ${demod_size}; i++)
+    {
+      ${edge_IQ}[i].real() = ${daWave_I}[i];
+      ${edge_IQ}[i].imag() = ${daWave_Q}[i];
+    }
+        
+    DEMODULATION ${Demod_EDGE}(TM::EDGE);       
+    ${Demod_EDGE}.setInputParameter("numSymbols", ${numSymbols}); // default is 200  
+        
+    // execute modulation API
+    ${Demod_EDGE}.execute(${edge_IQ}, ${frequency});
+
+    double evmRms = 0.0, evmPeak = 0.0;
+    ${Demod_EDGE}.getResult("evmRms",  evmRms);
+    ${Demod_EDGE}.getResult("evmPeak", evmPeak);
+           
+    // for debug
+    SMC_PUT_DEBUG("I_edge",  "I_edge",  ${daWave_I}) ;
+    SMC_PUT_DEBUG("Q_edge",  "Q_edge",  ${daWave_Q}) ;
+    SMC_PUT_DEBUG("IQ_edge", "IQ_edge", ${edge_IQ}.getReal(), ${edge_IQ}.getImag()) ;
+
+    // Data Logging
+    SMC_TEST(${dgtPin_I}, "edge_evmRms", V93kLimits::tmLimits, evmRms, true);
+    SMC_TEST(${dgtPin_Q}, "edge_evmPeak", V93kLimits::tmLimits, evmPeak, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DAC_FreqResp_SMCPostProcess">// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${resultHandle},
+    const string ${dgtPin})
+  { 
+    ARRAY_D ${daWave} = SMC_GET_WAVEFORM(${dgtPin},${resultHandle},1);
+    double ${fsDgt} = Analog.DGT(${dgtPin}).getFrequency()/(1+Analog.DGT(${dgtPin}).getInterDiscard());
+    // Define bin numbers of the test frequency here
+    ARRAY_I  ${binNumberArray}( 10 );
+    ${binNumberArray}[0] = 16; // 100 kHz
+    ${binNumberArray}[1] = 32; // 200 kHz
+    ${binNumberArray}[2] = 39; // 250 kHz
+    ${binNumberArray}[3] = 47; // 300 kHz
+    ${binNumberArray}[4] = 51; // 320 kHz
+    ${binNumberArray}[5] = 55; // 350 kHz
+    ${binNumberArray}[6] = 79; // 500 kHz
+    ${binNumberArray}[7] = 111; // 700 kHz
+    ${binNumberArray}[8] = 157; // 1000 kHz
+    ${binNumberArray}[9] = 237; // 1500 kHz
+    
+    // gain response &amp; -3db point calculation
+    ARRAY_D  ${deltaGainArray}(${binNumberArray}.size());
+    ARRAY_D ${spectrum} ;
+    DSP_SPECTRUM (${daWave}, ${spectrum}, DB, 0.0, RECT, 0) ;    
+      
+    double  ${refGain} = ${spectrum}[${binNumberArray}[0]]; // element 0 is supposed to be the reference bin      
+    int ${count3dB} = 0 ;  
+    for ( int i = 0; i &lt; ${binNumberArray}.size(); i++ ) 
+    {
+      ${deltaGainArray}[i] = ${spectrum}[${binNumberArray}[i]] - ${refGain};       
+      if ( ${deltaGainArray}[i] &gt; -3.0 ) 
+      { 
+        ${count3dB} = i; // this comes to be the bin number just before crossing -3dB point
+      }
+    }
+     
+    // linear regression to get a line passing (gain[${count3dB}], ${count3dB}) and (gain[${count3dB}+1], ${count3dB}+1)
+    double ${coefficient}=0.0, ${constant}=0.0; 
+    DSP_REG1(${deltaGainArray}, &amp;${coefficient}, &amp;${constant}, ${count3dB}, 2);
+        
+    // line inteporation to get the bin of 3dB point
+    double ${bin3db} = ((-3.0-${constant})/${coefficient} - static_cast&lt;int&gt;((-3.0-${constant})/${coefficient})) * (${binNumberArray}[${count3dB}+1] - ${binNumberArray}[${count3dB}])
+                     +  ${binNumberArray}[${count3dB}];
+               
+    double ${freq3dB} = ${bin3db} * ${fsDgt} / ${daWave}.size();
+    
+    SMC_PUT_DEBUG(${dgtPin}, "waveform", ${daWave});                  
+    // Data Logging
+    SMC_TEST(${dgtPin}, "pf_3db(KHz)", V93kLimits::tmLimits, ${freq3dB}*1e-3, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DAC_GainPhase_SMCPostProcess">// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${resultHandle},
+    const string ${dgtPin_I},
+    const string ${dgtPin_Q})
+  {  	
+    int ${mCycle} = 21; // number of cycle of the sinewave
+    // digitizer data upload
+    ARRAY_COMPLEX ${daWave} = SMC_GET_COMPLEX_WAVEFORM(${dgtPin_I},${resultHandle},1);
+    
+    ARRAY_D ${daWave_I} = ${daWave}.getReal();
+    ARRAY_D ${daWave_Q} = ${daWave}.getImag();   
+    
+    //post processing to analysis the captured waveform    
+    double ${gain_reference} = 0.96;// nominal output signal gain(amplitude)
+    double ${gain_I},  ${gain_Q};  //captured waveform gain (amplitude)
+    double ${phase_I}, ${phase_Q}; //captured waveform phase 
+    
+    ARRAY_COMPLEX ${result_I};
+    DSP_FFT(${daWave_I},${result_I},RECT);
+    COMPLEX ${signal} = ${result_I}[${mCycle}];
+    //I channel's amplitude
+    ${gain_I} = sqrt((${signal}.real()) * (${signal}.real()) + (${signal}.imag()) * (${signal}.imag()));
+    //I channel's phase
+    ${phase_I} = atan2(${signal}.imag(), ${signal}.real());
+
+    ARRAY_COMPLEX ${result_Q};
+    DSP_FFT(${daWave_Q},${result_Q},RECT);
+    ${signal} = ${result_Q}[${mCycle}];
+    //Q channel's amplitude
+    ${gain_Q} = sqrt((${signal}.real()) * (${signal}.real()) + (${signal}.imag()) * (${signal}.imag()));
+    //Q channel's phase
+    ${phase_Q} = atan2(${signal}.imag(), ${signal}.real());
+    
+    //derived result from waveform parameter
+    double  ${gain_err_I} = 20*log10(${gain_I}/${gain_reference});       // gain error of I [dB]
+    double  ${gain_err_Q} = 20*log10(${gain_Q}/${gain_reference});       // gain error of Q [dB]
+    double  ${gain_imb}   = 20*log10(${gain_I}/${gain_Q});             // gain imbalance [dB]
+    double  ${phase_imb}  = abs(${phase_I}-${phase_Q})/M_PI*180.0;     // phase imbalance [deg]
+    if (${phase_imb} &gt; 180)
+    {
+      ${phase_imb} = 360 - ${phase_imb};
+    }
+    // Data Logging
+    SMC_TEST(${dgtPin_I}, "gain_err_I", V93kLimits::tmLimits, ${gain_err_I}, true);
+    SMC_TEST(${dgtPin_Q}, "gain_err_Q", V93kLimits::tmLimits, ${gain_err_Q}, true);
+    SMC_TEST("IQ", "gain_imb", V93kLimits::tmLimits, ${gain_imb}, true);
+    SMC_TEST("IQ", "phase_imb", V93kLimits::tmLimits, ${phase_imb}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DAC_IQ_MeasurementSetup">// Do IO measurement for DAC
+string ${dgtPin_I} = "dgtPin_I";
+string ${dgtPin_Q} = "dgtPin_Q";
+string ${handleName} = "dacIQMeasurementTest";
+
+ON_FIRST_INVOCATION_BEGIN();
+  Routing.pin(${dgtPin_I}).connect(TM::SINGLE);
+  Routing.pin(${dgtPin_Q}).connect(TM::SINGLE);
+  Analog.DGT(${dgtPin_I}).enable();
+  Analog.DGT(${dgtPin_Q}).enable();
+    
+  Analog.requestResultHandle(${handleName});
+  SMC_EXECUTE_TEST(100 ms);
+
+  Analog.DGT(${dgtPin_I}).disable();
+  Analog.DGT(${dgtPin_Q}).disable();
+  Routing.pin(${dgtPin_I}).disconnect();
+  Routing.pin(${dgtPin_Q}).disconnect();
+ON_FIRST_INVOCATION_END();
+
+// kick off upload and caculation
+SMC_ARM(${handleName},${dgtPin_I},${dgtPin_Q});
+</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DAC_Linearity_SMCPostProcess">// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${resultHandle},
+    const string ${dgtPin})
+  { 
+    int ${numberOfBits} = 12;         // DAC number of bits
+    int ${numberPerStep} = 20;       // number of points per step
+    int ${numberDiscardPerStep} = 4; // number of discard per step 
+    double ${zeroScale} = -0.96; // zero scale level of DAC specification
+    double ${fullScale} = 0.96;  // full scale level of DAC specification
+    double ${zeroScaleErr}, ${fullScaleErr};// zero and full scale error result
+    LINEARtype  ${linResult}; // linearity result
+
+    // data upload
+    ARRAY_D ${daWave} = SMC_GET_WAVEFORM(${dgtPin},${resultHandle},1);
+    // linearigy calculation with averaging operation
+    int ${numberOfCode} = static_cast&lt;int&gt;(pow(2.0,${numberOfBits}));
+    int ${numberAverage} = ${numberPerStep}-${numberDiscardPerStep};
+    ARRAY_D ${waveAverage}(${numberOfCode});
+    ${waveAverage}.init(0.0);
+    ARRAY_D ${waveILE}, ${waveDLE};
+      
+    for(int index=0; index &lt; ${numberOfCode}; index++)
+    {
+      int offset = index*${numberPerStep};
+      for (int i = ${numberDiscardPerStep}; i &lt; ${numberPerStep}; i++)
+      {
+        ${waveAverage}[index] += ${daWave}[i+offset];
+      }
+      ${waveAverage}[index]/=${numberAverage};
+    }
+
+    DSP_LINEAR(${waveAverage}, &amp;${linResult}, ${waveDLE}, ${waveILE}, END_PT_LSB);
+    // Digtizer offset voltage needs to be subtracted in single-end mode
+    // In differential mode, the offset is always zero.
+    double ${dgtVoffset} = DGT(${dgtPin}).getVOffset();
+    
+    // In case of Differencial, dgtVoffset is always zero
+    ${zeroScaleErr} = ${waveAverage}[0] +${dgtVoffset} - ${zeroScale};
+    ${fullScaleErr} = ${waveAverage}[${numberOfCode}-1]+${dgtVoffset} - ${fullScale};
+     
+    SMC_PUT_DEBUG(${dgtPin}, "Wave Raw", ${daWave});
+    SMC_PUT_DEBUG(${dgtPin}, "Wave Average", ${waveAverage});
+    SMC_PUT_DEBUG(${dgtPin}, "ILE", ${waveILE});
+    SMC_PUT_DEBUG(${dgtPin}, "DLE", ${waveDLE});
+ 
+    // Data Logging    
+    SMC_TEST(${dgtPin}, "DLE", V93kLimits::tmLimits, ${linResult}.damax, true);
+    SMC_TEST(${dgtPin}, "ILE", V93kLimits::tmLimits, ${linResult}.iamax, true);
+    SMC_TEST(${dgtPin}, "ZSE", V93kLimits::tmLimits, ${zeroScaleErr}, true);
+    SMC_TEST(${dgtPin}, "FSE", V93kLimits::tmLimits, ${fullScaleErr}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DAC_MeasurementSetup">// Do measurement for DAC distortion
+string ${dgtPin} = "dgtPin";
+string ${handleName} = "dacMeasurementTest";
+
+ON_FIRST_INVOCATION_BEGIN();
+  Routing.pin(${dgtPin}).connect(TM::SINGLE);
+  Analog.DGT(${dgtPin}).enable();
+  
+  Analog.requestResultHandle(${handleName});
+  SMC_EXECUTE_TEST(100 ms);
+  
+  Analog.DGT(${dgtPin}).disable();
+  Routing.pin(${dgtPin}).disconnect();
+ON_FIRST_INVOCATION_END();
+
+// kick off upload and caculation
+SMC_ARM(${handleName},${dgtPin});
+</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_IFVM_DCScale">// using DCScale instruments to do IFVM
+const string ${pinlist} = "pin1,pin2";
+
+SPMU_TASK ${spmuTask};
+ON_FIRST_INVOCATION_BEGIN();
+  ${spmuTask}.pin(${pinlist})
+          .preCharge(3000 mV)
+          .min(0 mV)
+          .max(3000 mV)
+          .mode("IFVM")
+          .iForce(20 uA)
+          .clamp(3000 mV)
+          .execMode("PAR")
+          .relay("NT")
+          .settling(1.2 ms);
+  ${spmuTask}.execMode("PVAL").execute();
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${spmuTask}.getValue("pin1"); //unit is V
+double ${valueOfPin2} = ${spmuTask}.getValue("pin2"); //unit is V</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_IFVM_MCX">// using MCX instruments to do IFVM
+const string ${pinlist} = "pin1,pin2";
+
+PMU_IFVM  ${pmuIfvm}(${pinlist},TM::PPMU);
+ON_FIRST_INVOCATION_BEGIN();
+  ${pmuIfvm}.iForce(20 uA)
+         .min_voltage(0.0 mV)
+         .max_voltage(3000 mV)
+         .settling(1.2 ms)
+         .mode("NP")
+         .execute(TM::PVAL);
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${pmuIfvm}.getValue("pin1"); // unit is mV
+double ${valueOfPin2} = ${pmuIfvm}.getValue("pin2"); // unit is mV</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_IFVM_PPMU_Parallel">// using PPMU instruments to do IFVM parallelly
+const string ${pinlist} = "pin1,pin2";
+
+PPMU_MEASURE ${ppmuMeasure};
+ON_FIRST_INVOCATION_BEGIN();
+  PPMU_SETTING ${ppmuSetting};
+  PPMU_CLAMP   ${ppmuClampOn};
+  PPMU_CLAMP   ${ppmuClampOff};
+  PPMU_RELAY   ${ppmuRelayStep1};
+  PPMU_RELAY   ${ppmuRelayStep2};
+  PPMU_RELAY   ${ppmuRelayRestoreStep1};
+  PPMU_RELAY   ${ppmuRelayRestoreStep2};
+  TASK_LIST    ${taskList};
+  // ppmu setting
+  ${ppmuSetting}.pin(${pinlist})
+             .iRange(30 uA)
+             .min(0.0 mV)
+             .max(3000 mV)
+             .iForce(20 uA);
+  //switch clamp on
+  ${ppmuClampOn}.pin(${pinlist})
+             .status("CLAMP_ON")
+             .low(0.0 mV)
+             .high(3000 mV);
+  ${ppmuClampOn}.wait(1 ms);
+  // relay switch :BBM mode
+  ${ppmuRelayStep1}.pin(${pinlist}).status("AC_OFF");
+  ${ppmuRelayStep2}.pin(${pinlist}).status("PPMU_ON");
+  ${ppmuRelayStep1}.wait(0.3 ms);
+  ${ppmuRelayStep2}.wait(0.3 ms);
+  // switch clamp off
+  ${ppmuClampOff}.pin(${pinlist}).status("CLAMP_OFF");
+  ${ppmuClampOff}.wait(1.2 ms);
+  // determine measure
+  ${ppmuMeasure}.pin(${pinlist}).execMode("PVAL");
+  // relay restore
+  ${ppmuRelayRestoreStep1}.pin(${pinlist}).status("PPMU_OFF");
+  ${ppmuRelayRestoreStep2}.pin(${pinlist}).status("AC_ON");
+  ${ppmuRelayStep1}.wait(0.3 ms);
+  ${ppmuRelayStep2}.wait(0.3 ms);
+  ${taskList}.add(${ppmuSetting})
+          .add(${ppmuClampOn})
+          .add(${ppmuRelayStep1})
+          .add(${ppmuRelayStep2})
+          .add(${ppmuClampOff})
+          .add(${ppmuMeasure})
+          .add(${ppmuRelayRestoreStep1})
+          .add(${ppmuRelayRestoreStep2})
+          .execute();
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${ppmuMeasure}.getValue("pin1"); // unit is V
+double ${valueOfPin2} = ${ppmuMeasure}.getValue("pin2"); // unit is V</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_IFVM_PPMU_Serial">// using PPMU instruments to do IFVM serially
+const string ${pinlist} = "pin1,pin2";
+
+PMU_IFVM  ${pmuIfvm}(${pinlist},TM::PPMU);
+ON_FIRST_INVOCATION_BEGIN();
+  ${pmuIfvm}.preCharge(3000 mV)
+         .iForce(20 uA)
+         .min_voltage(0.0 mV)
+         .max_voltage(3000 mV)
+         .settling(1.2 ms)
+         .mode("NS")
+         .execute(TM::PVAL);
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${pmuIfvm}.getValue("pin1"); // unit is mV
+double ${valueOfPin2} = ${pmuIfvm}.getValue("pin2"); // unit is mV</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_IFVM_SPMU">// using SPMU instruments to do IFVM
+const string ${pinlist} = "pin1,pin2";
+
+SPMU_TASK ${spmuTask};
+ON_FIRST_INVOCATION_BEGIN();
+  ${spmuTask}.pin(${pinlist})
+          .preCharge(3000 mV)
+          .min(0.0 mV)
+          .max(3000 mV)
+          .mode("IFVM")
+          .iForce(20 uA)
+          .clamp(3000 mV)
+          .execMode("SER")
+          .relay("NTMBB")
+          .settling(1.2 ms);
+  ${spmuTask}.execMode("PVAL").execute();
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${spmuTask}.getValue("pin1"); //unit is V
+double ${valueOfPin2} = ${spmuTask}.getValue("pin2"); //unit is V</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_VFIM_DCScale">// using DCScale instruments to do VFIM
+const string ${pinlist} = "pin1,pin2";
+
+SPMU_TASK ${spmuTask};
+ON_FIRST_INVOCATION_BEGIN();
+  ${spmuTask}.pin(${pinlist})
+          .preCharge(3000 mV)
+          .min(0.0 uA)
+          .max(30 uA)
+          .mode("VFIM")
+          .vForce(2500 mV)
+          .clamp(30 uA)
+          .execMode("PAR")
+          .relay("NT")
+          .settling(1.2 ms);
+  ${spmuTask}.execMode("PVAL").execute();
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${spmuTask}.getValue("pin1"); //unit is A
+double ${valueOfPin2} = ${spmuTask}.getValue("pin2"); //unit is A</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_VFIM_DPS">// using DPS instruments to do VFIM
+const string ${pinlist} = "pin1,pin2";
+
+DPS_TASK ${dpsTask};
+ON_FIRST_INVOCATION_BEGIN();
+  ${dpsTask}.pin(${pinlist})
+	       .min(0.0 uA)
+	       .max(30 uA);
+  ${dpsTask}.execMode("PVAL");
+  ${dpsTask}.samples(8);
+  ${dpsTask}.execute();
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${dpsTask}.getValue("pin1"); //unit is A
+double ${valueOfPin2} = ${dpsTask}.getValue("pin2"); //unit is A</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_VFIM_MCX">// using MCX instruments to do VFIM
+const string ${pinlist} = "pin1,pin2";
+
+PMU_VFIM  ${pmuVfim}(${pinlist},TM::PPMU);
+ON_FIRST_INVOCATION_BEGIN();
+  ${pmuVfim}.preCharge(2000 mV)
+         .vForce(2000 mV)
+         .min_current(0.0 uA)
+         .max_current(20 uA)
+         .settling(1.2 ms)
+         .mode("NP")
+         .measureMode("NRSP")
+         .execute(TM::PVAL);
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${pmuVfim}.getValue("pin1"); // unit is uA
+double ${valueOfPin2} = ${pmuVfim}.getValue("pin2"); // unit is uA</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_VFIM_PPMU_Parallel">// using PPMU instruments to do VFIM
+const string ${pinlist} = "pin1,pin2";
+
+PPMU_MEASURE ${ppmuMeasure};
+ON_FIRST_INVOCATION_BEGIN();
+  PPMU_SETTING ${ppmuPrechargeSetting};
+  PPMU_SETTING ${ppmuSetting};
+  PPMU_RELAY   ${ppmuRelayStep1};
+  PPMU_RELAY   ${ppmuRelayStep2};
+  PPMU_RELAY   ${ppmuRelayRestoreStep1};
+  PPMU_RELAY   ${ppmuRelayRestoreStep2};
+  TASK_LIST    ${taskList};
+  // ppmu precharge setting
+  ${ppmuPrechargeSetting}.pin(${pinlist})
+                      .iRange(1 uA)
+                      .min(-1 uA)
+                      .max(1 uA)
+                      .vForce(3000 mV);
+  ${ppmuPrechargeSetting}.wait(1 ms);
+  // relay switch :BBM mode
+  ${ppmuRelayStep1}.pin(${pinlist}).status("AC_OFF");
+  ${ppmuRelayStep2}.pin(${pinlist}).status("PPMU_ON");
+  ${ppmuRelayStep1}.wait(0.3 ms);
+  ${ppmuRelayStep2}.wait(0.3 ms);
+  // ppmu setting
+  ${ppmuSetting}.pin(${pinlist})
+             .iRange(30 uA)
+             .min(0.0 uA)
+             .max(30 uA)
+             .vForce(3000 mV);
+  ${ppmuSetting}.wait(1.2 ms);
+  // determine measure
+  ${ppmuMeasure}.pin(${pinlist}).execMode("PVAL");
+  // relay restore
+  ${ppmuRelayRestoreStep1}.pin(${pinlist}).status("PPMU_OFF");
+  ${ppmuRelayRestoreStep2}.pin(${pinlist}).status("AC_ON");
+  ${ppmuRelayStep1}.wait(0.3 ms);
+  ${ppmuRelayStep2}.wait(0.3 ms);
+  ${taskList}.add(${ppmuPrechargeSetting})
+          .add(${ppmuRelayStep1})
+          .add(${ppmuRelayStep2})
+          .add(${ppmuSetting})
+          .add(${ppmuMeasure})
+          .add(${ppmuRelayRestoreStep1})
+          .add(${ppmuRelayRestoreStep2})
+          .execute();
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${ppmuMeasure}.getValue("pin1"); // unit is A
+double ${valueOfPin2} = ${ppmuMeasure}.getValue("pin2"); // unit is A</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_VFIM_PPMU_Serial">// using PPMU instruments to do VFIM
+const string ${pinlist} = "pin1,pin2";
+
+PMU_VFIM  ${pmuVfim}(${pinlist},TM::PPMU);
+ON_FIRST_INVOCATION_BEGIN();
+  ${pmuVfim}.preAction("NONE")
+         .preCharge(3000 mV)
+         .vForce(3000 mV)
+         .min_current(0.0 uA)
+         .max_current(20 uA)
+         .settling(1.2 ms)
+         .mode("NS")
+         .execute(TM::PVAL);
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${pmuVfim}.getValue("pin1"); // unit is uA
+double ${valueOfPin2} = ${pmuVfim}.getValue("pin2"); // unit is uA</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_VFIM_SPMU">// using SPMU instruments to do VFIM
+const string ${pinlist} = "pin1,pin2";
+
+SPMU_TASK ${spmuTask};
+ON_FIRST_INVOCATION_BEGIN();
+  ${spmuTask}.pin(${pinlist})
+          .preCharge(3000 mV)
+          .min(0.0 uA)
+          .max(20 uA)
+          .mode("VFIM")
+          .vForce(3000 mV)
+          .clamp(30 uA)
+          .execMode("SER")
+          .relay("NTMBB")
+          .settling(1.2 ms);
+  ${spmuTask}.execMode("PVAL").execute();
+ON_FIRST_INVOCATION_END();
+
+double ${valueOfPin1} = ${spmuTask}.getValue("pin1"); //unit is A
+double ${valueOfPin2} = ${spmuTask}.getValue("pin2"); //unit is A</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_DC_VForce_DCScale">// using DCScale instruments to do VFIM
+const string ${pinlist} = "pin1,pin2";
+
+SPMU_TASK ${spmuTaskForceOn};
+ON_FIRST_INVOCATION_BEGIN();
+  ${spmuTaskForceOn}.pin(${pinlist})
+                 .preCharge(3000 mV)
+                 .min(0.0 uA)
+                 .max(30 uA)
+                 .mode("VFIM")
+                 .vForce(3000 mV)
+                 .clamp(30 uA)
+                 .execMode("PAR")
+                 .relay("NT")
+                 .settling(1.2 ms);
+  ${spmuTaskForceOn}.execMode("FORCE_ON");                
+  ${spmuTaskForceOn}.execute();
+ON_FIRST_INVOCATION_END();</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_EVM_Measure">//do measurement for RF to base band EVM  	
+string ${iPinName} = "DGT_MCB_IP_X";
+string ${qPinName} = "DGT_MCB_QP_X";
+string ${stimName} = "Dot11bStim";
+static double ${sampleRate};  
+ON_FIRST_INVOCATION_BEGIN();  
+  Analog.primary(${stimName});
+  STIM_DEF(${stimName}).connectAll().disableAll();
+  EXECUTE_GROUP(); 
+  
+  ${sampleRate} = DGT(${iPinName}).getFrequency();  
+  
+  STIM_DEF(${stimName}).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+//upload data waveform
+${mReceiveData}[CURRENT_SITE_NUMBER()-1] = DGT(${iPinName}).getComplexWaveform();
+//kick off hidden calculation
+SMC_ARM(${iPinName}, ${sampleRate});
+
+</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_EVM_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES}= 256;
+  ARRAY_COMPLEX ${mReceiveData}[${mSITES}];
+
+// put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${iPinName}, 
+    const double ${sampleRate}) 
+  {
+    double ${measuredEVM_rms};
+    double ${measuredEVM_db};
+    //use WLAN_80211B stanard
+    TM::DEMOD_STANDARD ${standard} = TM::EIGHT_ZERO_TWO_DOT_11B; 
+    DEMODULATION  ${MeasEVM}(${standard});
+    
+    ${MeasEVM}.setInputParameter("outputPointsPerSymbol", 1); 
+    ${MeasEVM}.execute(${mReceiveData}[SMC_SITE_NUMBER()-1], ${sampleRate});   
+    ${MeasEVM}.getResult("evmRms", ${measuredEVM_rms});
+    ${measuredEVM_db} = 20*(log10(${measuredEVM_rms})-2);
+    
+    //datalog   
+    SMC_TEST(${iPinName}, "RX_EVM_rms", V93kLimits::tmLimits, ${measuredEVM_rms}, true);
+    SMC_TEST(${iPinName}, "RX_EVM_db", V93kLimits::tmLimits, ${measuredEVM_db}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_Filter_Measure">//do measurement for RF to base band filter test
+string ${iPinName} = "DGT_MCB_IP_X";
+string ${qPinName} = "DGT_MCB_QP_X";
+string ${stimFrequencyIndexVariableName} = "RFBB_Filter_Stim_list_indx";
+int ${stimFrequencyIndex} = 0;
+string ${stimPowerVariableName} = "RFBB_Filter_Stim_pwr";
+double ${powerLevel} = -35;  
+string ${stimName} = "RFBB_Filter_ModStim";
+string ${BBToneListName} = "RFBB_Filter_BB_list";
+static double ${sampleFrequency};
+
+ON_FIRST_INVOCATION_BEGIN();
+  //set up for execution
+  DATA_DEF(${stimFrequencyIndexVariableName}).set(${stimFrequencyIndex});
+  DATA_DEF(${stimPowerVariableName}).set(${powerLevel});  
+  Analog.primary(${stimName});                    
+  STIM_DEF(${stimName}).disableAll().connectAll();
+
+  //execution
+  EXECUTE_GROUP(${stimName});
+  
+  //get set up for calculation
+  int ${numberOfBBTones} = DATA_DEF(${BBToneListName}).size();
+  ${mTonesArrary}.resize(${numberOfBBTones});
+  for (int i = 0; i &lt; ${numberOfBBTones}; i++)   
+  {
+    ${mTonesArrary}[i] =  DATA_DEF(${BBToneListName}).getValue(i);
+  }
+  ${sampleFrequency} = DGT(${iPinName}).getFrequency();
+
+  STIM_DEF(${stimName}).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+${mReceiveData}[CURRENT_SITE_NUMBER()-1] = DGT(${iPinName}).getComplexWaveform();
+SMC_ARM(${iPinName}, ${qPinName}, ${sampleFrequency});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_Filter_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES}= 256;
+  ARRAY_D ${mTonesArrary};
+  ARRAY_COMPLEX ${mReceiveData}[${mSITES}];
+
+//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${iPinName}, 
+    const string ${qPinName},
+    const double ${sampleFrequency})
+  {
+    //array contains results for I/Q: index 0 for I channel, index 1 for Q channel
+    double ${inbandFlat}[2] = {0,0};
+    double ${pointer_3DB}[2] = {-999,-999};
+    
+    //------------------------------------------------- 
+    // iteratively do I/Q channel analysis
+    //-------------------------------------------------
+    int ${siteNum} = SMC_SITE_NUMBER();
+    ARRAY_D ${capData} = ${mReceiveData}[${siteNum}-1].getReal();
+    int ${sampleSize} = ${mReceiveData}[${siteNum}-1].size();
+    for (int iqChannel = 0; iqChannel &lt; 2;  ++iqChannel)
+    {
+      int i = 0;
+      int corner = 0;
+      double  minInband = 0, maxInband = 0, meanInband = 0;
+      double binwidth = 0, iM = 0, iB = 0, iDx = 0, iDy = 0;
+      const int MAX_SIZE = 200;
+      ARRAY_D frequencyArray;
+      ARRAY_D tonePowerArray(MAX_SIZE); 
+      ARRAY_I binsM(MAX_SIZE); 
+      
+      if (${sampleSize} &gt; 2)
+      {
+        binwidth = ${sampleFrequency} / ${sampleSize};
+        DSP_SPECTRUM(${capData}, frequencyArray, DB, 1.0, RECT, 0);
+    
+        /*
+         * search through the passed-in list of tones.
+         * find out exactly which bins they fall into by first calculating the ideal bin, 
+         * then search through the frequency spectrum. 
+         * the number of bins on either side looking for the actual bin where the signal lies
+         * by sweeping for the most signal energy (power) over a range of (binM-numBins to binM+numBins).
+         * keep range narrow to avoid capturing spurious signals.
+         */
+    
+        for (i = 0; i &lt; ${mTonesArrary}.size(); i++)
+        {
+          // calculate the Bin (M) which the paticular tone is to fall into (ideally) 
+          // using M = SampleSize*ToneFreq/${sampleFrequency}
+          int binM = (int)(((${mTonesArrary}[i]/(${sampleFrequency})) * ${sampleSize}) );
+          binsM[i] = binM;
+          // expecting all tones to be coherent to digitizing sample rate
+          tonePowerArray[i] =frequencyArray[binM];      
+        }
+  
+        // calculate inband flatness mean value of first three tones)
+        for( i = 0; i &lt; 3; i++) 
+        {
+          meanInband += tonePowerArray[i];
+        }
+        meanInband /= 3.0;
+      
+        // search for the first value which is less than the -3dB point by looking for the first array 
+        // element which is 3dB below the mean value calculated above.
+        i = 2;       
+        while( (i &lt; tonePowerArray.size() ) &amp;&amp; (tonePowerArray[i] - meanInband  &gt; -3.0) )  
+        {
+          ++i;
+        }
+        
+        corner = i;
+        //3db is found
+        if(corner &lt; tonePowerArray.size()) 
+        {
+          // use linear interpolation to determine 3dB point (m = dy/dx and y = mx+b)
+          // difference between inband bin and first bin below -3dB
+          iDx = (binsM[corner] - binsM[corner-1]) * binwidth;          
+          iDy = tonePowerArray[corner] - tonePowerArray[corner-1];
+          // Slope in dB/Hz
+          iM = iDy/iDx;                                                         
+          iB = tonePowerArray[corner]- iM * binsM[corner] * binwidth; // Calculate the Y-intercept
+          //calculation equation: x = (y-b)/m
+          ${pointer_3DB}[iqChannel] = ( ((meanInband - 3.0) - iB) / iM) / 1e6;
+        }
+        else 
+        {
+          ${pointer_3DB}[iqChannel] = -999;
+        }
+    
+        //Get inband flatness from 90% of 3db point
+        maxInband = minInband = tonePowerArray[0] - meanInband;
+        corner = (int)(0.9 * ${pointer_3DB}[iqChannel] * 1e6 / binwidth);
+  
+        for( i = 0; i &lt; ${mTonesArrary}.size(); i++)
+        {
+           if (binsM[i] &lt; corner)
+           {
+             double iInband = tonePowerArray[i] - meanInband;
+             maxInband = max(iInband,maxInband);
+             minInband = min(iInband,minInband);
+           }
+        }
+        ${inbandFlat}[iqChannel] = maxInband - minInband; 
+      }
+      else
+      {
+        ${pointer_3DB}[iqChannel] = -999; 
+      }
+      
+      //move to calculate results for Q channel
+      ${capData} = ${mReceiveData}[${siteNum}-1].getImag();
+    }     
+    
+    //datalog
+    SMC_TEST(${iPinName}, "PassBand_Flatness_I", V93kLimits::tmLimits, ${inbandFlat}[0], true);
+    SMC_TEST(${qPinName}, "PassBand_Flatness_Q", V93kLimits::tmLimits, ${inbandFlat}[1], true);
+    SMC_TEST(${iPinName}, "-3dB_Point_I", V93kLimits::tmLimits, ${pointer_3DB}[0], true);
+    SMC_TEST(${qPinName}, "-3dB_Point_Q", V93kLimits::tmLimits, ${pointer_3DB}[1], true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_Gain_Measure">//do measurement for RF to base band gain and gain compression test
+string ${iPinName} = "DGT_MCB_IP_X";
+string ${qPinName} = "DGT_MCB_QP_X";
+string ${stimName} = "RFBB_cwRFin2stims";
+const double ${rfPowerGainTest} = -40; 
+const double ${rfPowerCompTest} = -28; 
+static double ${sampleFreq};
+ON_FIRST_INVOCATION_BEGIN() ;
+  Analog.primary(${stimName}) ;
+  DATA_DEF("GainCompPowLev1").set(${rfPowerGainTest});
+  DATA_DEF("GainCompPowLev2").set(${rfPowerCompTest});
+  STIM_DEF( ${stimName} ).disableAll().connectAll();
+
+  EXECUTE_GROUP(${stimName});         
+      
+  ${sampleFreq} = DGT(${iPinName}).getFrequency();
+
+  STIM_DEF( ${stimName} ).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+int ${siteNum} = CURRENT_SITE_NUMBER();
+//upload data
+${mGainTestReceiveData}[${siteNum}-1] = DGT(${iPinName}).getComplexWaveform(1);
+${mCompressTestReceiveData}[${siteNum}-1] = DGT(${iPinName}).getComplexWaveform(2);
+//kick off hidden calculation
+SMC_ARM(${iPinName}, ${qPinName}, ${sampleFreq},${rfPowerGainTest},${rfPowerCompTest});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_Gain_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES}= 256;
+  ARRAY_COMPLEX ${mGainTestReceiveData}[${mSITES}];
+  ARRAY_COMPLEX ${mCompressTestReceiveData}[${mSITES}];
+
+//put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${iPinName}, 
+    const string ${qPinName},
+    const double ${sampleFreq},
+    const double ${rfPowerGainTest},
+    const double ${rfPowerCompTest})
+  {
+    const int ${nHarm} = 5;
+    const double ${expectedBasebandFrequency} = 3000000; 
+    
+    double ${inputVoltage}, ${inputVoltageCompression};
+    int ${index} ;
+    double ${binwidth};
+    
+    double ${gainNormal_I}, ${gainNormal_Q};
+    double ${gainCompression_I}, ${gainCompression_Q};
+    double ${compression_I}, ${compression_Q} ;
+
+    THDtype ${thdResult_I},${thdResult_Q};
+    ARRAY_D ${waveform_I}, ${waveform_Q};
+    double ${outputVoltage_I}, ${outputVoltage_Q};
+    double ${outputVoltageCompression_I}, ${outputVoltageCompression_Q};
+
+    ARRAY_D ${spectrum_volts};
+    ARRAY_COMPLEX ${spectrum};
+    
+    int ${siteNum} = SMC_SITE_NUMBER();
+
+    ${binwidth} = ${sampleFreq}/${mGainTestReceiveData}[${siteNum}-1].size();
+    ${index} = (int)(${expectedBasebandFrequency}/${binwidth});
+
+    DSP_FFT(${mGainTestReceiveData}[${siteNum}-1], ${spectrum} , RECT);
+    DSP_ABS_VEC(${spectrum} , ${spectrum_volts});
+
+    // convert to Vp value in 50 Ohm environment
+    ${inputVoltage}  = sqrt(pow(10,(${rfPowerGainTest}-10)/10)); 
+    
+    /*
+     * Make sure that index is at expected bin;
+     * slight deviations are possible in case of the on-board crystal being used for reference clock generation
+     */ 
+    double max_temp = -999 ;
+    int fIndex ;
+    for(int offset = -3 ; offset &lt;= 3; ++offset )
+    {
+      double temp_val = ${spectrum_volts}[${index} + offset] ;
+      if (temp_val &gt; max_temp)
+      {
+        max_temp = temp_val ;
+        fIndex = offset ;
+      }
+    }
+    ${index} += fIndex;      
+
+    // gain test for I channel
+    ${waveform_I} = ${mGainTestReceiveData}[${siteNum}-1].getReal();
+    DSP_THD(${waveform_I} , &amp;${thdResult_I} , ${index} , ${nHarm} , PERCENT , 0);
+    ${outputVoltage_I} = ${thdResult_I}.signal;
+    ${gainNormal_I} = 20*log10(${outputVoltage_I}/${inputVoltage}); 
+    // gain test for I channel
+    ${waveform_Q} = ${mGainTestReceiveData}[${siteNum}-1].getImag();
+    DSP_THD(${waveform_Q} , &amp;${thdResult_Q} , ${index} , ${nHarm} , PERCENT , 0);
+    ${outputVoltage_Q} = ${thdResult_Q}.signal; 
+    ${gainNormal_Q} = 20*log10(${outputVoltage_Q}/${inputVoltage});
+
+    // compression test for I channel
+    ${inputVoltageCompression}  = sqrt(pow(10,(${rfPowerCompTest}-10)/10));
+    ${waveform_I} = ${mCompressTestReceiveData}[${siteNum}-1].getReal();
+    DSP_THD(${waveform_I} , &amp;${thdResult_I} , ${index} , ${nHarm} , PERCENT , 0);
+    ${outputVoltageCompression_I} = ${thdResult_I}.signal;
+    ${gainCompression_I} = 20*log10(${outputVoltageCompression_I}/${inputVoltageCompression}); 
+    // compression test for Q channel
+    ${waveform_Q} = ${mCompressTestReceiveData}[${siteNum}-1].getImag();
+    DSP_THD( ${waveform_Q} , &amp;${thdResult_Q} , ${index} , ${nHarm} , PERCENT , 0);
+    ${outputVoltageCompression_Q} = ${thdResult_Q}.signal;
+    ${gainCompression_Q} = 20*log10(${outputVoltageCompression_Q}/${inputVoltageCompression});
+
+    ${compression_I} = ${gainNormal_I} - ${gainCompression_I};
+    ${compression_Q} = ${gainNormal_Q} - ${gainCompression_Q};
+    
+    //datalog
+    SMC_TEST(${iPinName}, "GainI", V93kLimits::tmLimits, ${gainNormal_I}, true);
+    SMC_TEST(${qPinName}, "GainQ", V93kLimits::tmLimits, ${gainNormal_Q}, true);
+    SMC_TEST(${iPinName}, "GainCompI", V93kLimits::tmLimits, ${compression_I}, true);
+    SMC_TEST(${qPinName}, "GainCompI", V93kLimits::tmLimits, ${compression_Q}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_IP3_Measure">//do measurement for RF to base band IP3 test
+string ${iPinName} = "DGT_MCB_IP_X";
+string ${qPinName} = "DGT_MCB_QP_X";
+string ${stimNameTone1and2} = "RFBB_IPn_2TStim";
+string ${stimNameTone2} = "RFBB_IPn_Stim_1";
+string ${stimFrequencyIndexVariable} = "RFBB_IPn_Stim_list_indx";
+string ${stimPowerVariable}= "RFBB_IPn_Stim_pwr";
+int ${stimFrequencyIndex} = 0;
+double ${powerLevel} = -28;
+double ${dutLOFrequency} = 2442000000.0;
+static double ${sampleFrequency};
+static double ${basebandFrequency_Low};
+static double ${basebandFrequency_High};
+
+ON_FIRST_INVOCATION_BEGIN() ;
+  Analog.primary(${stimNameTone1and2});                    
+  STIM_DEF(${stimNameTone1and2}).disableAll().connectAll();
+  DATA_DEF(${stimFrequencyIndexVariable}).set(${stimFrequencyIndex});
+  DATA_DEF(${stimPowerVariable}).set(${powerLevel}); 
+  EXECUTE_GROUP(${stimNameTone1and2});    
+  
+  // get parameter for measurement
+  ${sampleFrequency} = DGT(${iPinName}).getFrequency();
+  string ${frequencyListName};
+  double ${frequency1}, ${frequency2};
+         
+  STIM_DEF(${stimNameTone1and2}).get("FreqList", ${frequencyListName}); 
+  ${frequency1} = DATA_DEF(${frequencyListName}).getValue(${stimFrequencyIndex});       
+  STIM_DEF(${stimNameTone2}).get("FreqList", ${frequencyListName}); 
+  ${frequency2} = DATA_DEF(${frequencyListName}).getValue(${stimFrequencyIndex});
+  
+  ${basebandFrequency_Low} = min(${frequency1},${frequency2}) - ${dutLOFrequency};            
+  ${basebandFrequency_High} = max(${frequency1},${frequency2}) - ${dutLOFrequency};
+
+  STIM_DEF(${stimNameTone1and2}).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+//upload data
+${mReceiveData}[CURRENT_SITE_NUMBER()-1] = DGT(${iPinName}).getWaveform();
+//kick off hidden calculation
+SMC_ARM(${iPinName}, ${qPinName}, ${sampleFrequency}, ${powerLevel}, ${basebandFrequency_Low}, ${basebandFrequency_High});
+</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_IP3_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES}= 256;
+  ARRAY_COMPLEX ${mReceiveData}[${mSITES}];
+
+//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${iPinName},
+    const string ${qPinName}, 
+    const double ${sampleFrequency},
+    const double ${inputPower}, 
+    const double ${BBout_lo_freq}, 
+    const double ${BBout_hi_freq})
+  {
+    
+    //IIP3 results for I and Q channels: index 0 for I, index 1 for Q.
+    double ${IIP3}[2] = {-999,-999};
+    
+    int ${siteNum} = SMC_SITE_NUMBER();
+
+    //------------------------------------------------- 
+    // iteratively do I/Q channel analysis
+    //-------------------------------------------------
+    ARRAY_D ${capData} = ${mReceiveData}[${siteNum}-1].getReal();
+    int ${waveformSize} = ${mReceiveData}[${siteNum}-1].size();
+
+    for (int iqIndex = 0; iqIndex &lt; 2; ++iqIndex)
+    {
+      int binIndexTone_Low, binIndexTone_High, binIndexIMD_Low, binIndexIMD_High;
+      double ${binwidth}, averageIMD, ${outputPower};
+      ARRAY_D ${spectrum};
+      if (${waveformSize} &gt; 0)
+      {
+        // Impedance is 50 ohms
+        DSP_SPECTRUM(${capData}, ${spectrum}, DB, 0.316227766, RECT, 0); 
+
+        ${binwidth} = ${sampleFrequency} / ${waveformSize};
+        binIndexTone_Low = (INT)(${BBout_lo_freq} / ${binwidth} );
+        binIndexTone_High = (INT)(${BBout_hi_freq} / ${binwidth} );
+
+        ${outputPower} = (${spectrum}[binIndexTone_Low]+${spectrum}[binIndexTone_High])/2.0; 
+      
+        binIndexIMD_High = (int)((2*${BBout_hi_freq} - ${BBout_lo_freq}) / ${binwidth} );
+        binIndexIMD_Low = (int)((2*${BBout_lo_freq} - ${BBout_hi_freq}) / ${binwidth} );
+        // calculate average dB value in distortion tones
+        averageIMD = (${spectrum}[binIndexIMD_Low] + ${spectrum}[binIndexIMD_High])/2;  
+        // calculate value w/o "gain"
+        ${IIP3}[iqIndex] = ${inputPower} + (${outputPower} - averageIMD)/2;          
+      }
+      else
+      {
+        ${IIP3}[iqIndex] = -999;
+      }      
+      
+      //move to analyze Q channel data
+      ${capData} = ${mReceiveData}[${siteNum}-1].getImag();
+    }
+    
+    //datalog
+    SMC_TEST(${iPinName}, "IIP3_I", V93kLimits::tmLimits, ${IIP3}[0], true);
+    SMC_TEST(${qPinName}, "IIP3_Q", V93kLimits::tmLimits, ${IIP3}[1], true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_IQBalance_Measure">//do measurement for IQ balance test
+string ${iPinName} = "DGT_MCB_IP_X";
+string ${qPinName} = "DGT_MCB_QP_X";
+string ${stimName} = "RFBBIQStim";
+double ${basebandFrequency} = 3000000;
+static double ${sampleFreq};
+   
+ON_FIRST_INVOCATION_BEGIN();
+  Analog.primary(${stimName});
+  STIM_DEF(${stimName}).disableAll().connectAll(); 
+  EXECUTE_GROUP(${stimName});
+
+  // get setup for calculation
+  ${sampleFreq} = DGT(${iPinName}).getFrequency();
+
+  STIM_DEF(${stimName}).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+// upload data
+${mReceiveData} = DGT(${iPinName}).getComplexWaveform(1);
+// kick off hidden calculation
+SMC_ARM(${iPinName}, ${basebandFrequency}, ${sampleFreq});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_IQBalance_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES}= 256;
+  ARRAY_COMPLEX ${mReceiveData}[${mSITES}];
+
+//put this function as a memeber of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${iPinName}, 
+    const double ${basebandFrequency}, 
+    const double ${sampleFreq})
+  {
+    double ${amplitude};
+    double ${phaseBalance};
+    double ${rsb};
+    
+    int ${index}, ${sampleSize};
+    double ${binWidth};
+    double ${amplitudeVoltsI}, ${amplitudeVoltsQ}, ${phaseOrigI}, ${phaseOrigQ};
+    double phi, K, N, D;
+    ARRAY_COMPLEX ${waveformFreqI}, ${waveformFreqQ};
+    int ${siteNum} = SMC_SITE_NUMBER();
+
+    ARRAY_D ${waveformTimeI} = ${mReceiveData}[${siteNum}-1].getReal();
+    ARRAY_D ${waveformTimeQ} = ${mReceiveData}[${siteNum}-1].getImag();
+    
+    // calculate FFT
+    DSP_FFT(${waveformTimeI}, ${waveformFreqI}, RECT);
+    DSP_FFT(${waveformTimeQ}, ${waveformFreqQ}, RECT);
+
+    // calculate index of output tone  
+    ${sampleSize} = ${mReceiveData}[${siteNum}-1].size();
+    ${binWidth} = ${sampleFreq}/${sampleSize};
+    ${index} = (INT)(${basebandFrequency}/${binWidth});
+    
+    // calculate amplitude balance  
+    ${amplitudeVoltsI} = sqrt(
+      ${waveformFreqI}[${index}].real()*${waveformFreqI}[${index}].real() 
+      + ${waveformFreqI}[${index}].imag()*${waveformFreqI}[${index}].imag()); 
+    ${amplitudeVoltsQ} = sqrt(
+      ${waveformFreqQ}[${index}].real()*${waveformFreqQ}[${index}].real() 
+      + ${waveformFreqQ}[${index}].imag()*${waveformFreqQ}[${index}].imag()); 
+    ${amplitude} = 10*log( fabs(${amplitudeVoltsQ} / ${amplitudeVoltsI}) );
+
+    // calculate phase balance
+    ${phaseOrigI} = atan2(${waveformFreqI}[${index}].imag(), ${waveformFreqI}[${index}].real());
+    ${phaseOrigQ} = atan2(${waveformFreqQ}[${index}].imag(), ${waveformFreqQ}[${index}].real());
+    ${phaseBalance} = 180 * (${phaseOrigQ} - ${phaseOrigI}) / M_PI;
+    if (${phaseBalance} &lt; 0)  
+    {
+      ${phaseBalance} = 360.0 + ${phaseBalance};
+    }
+    else if (${phaseBalance} &gt; 180) 
+    {
+      ${phaseBalance} = 360.0 - ${phaseBalance};
+    }
+    ${phaseBalance} = 90 - ${phaseBalance};
+
+    K = ${amplitudeVoltsQ} / ${amplitudeVoltsI};
+    phi  = M_PI/2 - fabs(${phaseOrigQ} - ${phaseOrigI});
+    // Calculate the numerator of the linear RSB equation
+    N = (1 - 2*K*cos(phi) + K*K); 
+    // Calculate the denominator of the linear RSB equation
+    D = (1 + 2*K*cos(phi) + K*K); 
+    ${rsb} = fabs(10 * log10(N/D) );          
+    
+    
+    SMC_PUT_DEBUG("Dummy_Pin_I", "I Time", ${waveformTimeI});
+    SMC_PUT_DEBUG("Dummy_Pin_Q", "Q Time", ${waveformTimeQ});
+    
+    //datalog
+    SMC_TEST(${iPinName}, "AmpBalance", V93kLimits::tmLimits, ${amplitude}, true);
+    SMC_TEST(${iPinName}, "PhaseBalance", V93kLimits::tmLimits, ${phaseBalance}, true);
+    SMC_TEST(${iPinName}, "RSB", V93kLimits::tmLimits, ${rsb}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_NoiseFigure_Measure">//do measurement for RF to baseband noise figure test
+string ${iPinName} = "DGT_MCB_IP_X";
+string ${qPinName} = "DGT_MCB_QP_X";
+string ${stimName} = "myStim";
+static double ${sampleFrequency};
+ON_FIRST_INVOCATION_BEGIN();
+  Analog.primary(${stimName}); 
+  STIM_DEF(${stimName}).disableAll().connectAll(); 
+  EXECUTE_GROUP(${stimName});
+  //get setup for calculation
+  ${sampleFrequency} = DGT(${iPinName}).getFrequency();
+
+  STIM_DEF(${stimName}).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+int ${siteNum} = CURRENT_SITE_NUMBER();
+//upload data
+${mSignalReceiveData}[${siteNum}-1] = DGT(${iPinName}).getComplexWaveform(1); 
+${mNoiseReceiveData}[${siteNum}-1] = DGT(${iPinName}).getComplexWaveform(2); 
+//kick off hidden calcualtion
+SMC_ARM(${iPinName}, ${qPinName}, ${sampleFrequency});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoBB_NoiseFigure_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES}= 256;
+  ARRAY_COMPLEX ${mSignalReceiveData}[${mSITES}];
+  ARRAY_COMPLEX ${mNoiseReceiveData}[${mSITES}];
+
+//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${iPinName}, 
+    const string ${qPinName},
+    const double ${sampleFrequency})
+  {
+    const double ${basebandFrequency} = 3000000;
+    const double ${basebandFrequencyNoiseFigureBegin} = 2950000;
+    const double ${basebandFrequencyNoiseFigureEnd} = 3050000;
+    const double ${rfInputPower} = -40;
+    
+    double ${noiseFigure_I};
+    double ${noiseFigure_Q};
+    
+    int ${indexForSignalOutput}, ${indexForNoiseOutputBegin}, ${indexForNoiseOutputEnd};
+    int ${sampleSize};
+    double ${binWidth};
+    double ${signalInputPower}, ${noiseInputPower};
+    double ${signalOutputPower_I}, ${signalOutputPower_Q};
+    double ${noiseOutputPower_I}, ${noiseOutputPower_Q};
+    ARRAY_COMPLEX ${signalFrequency_I}, ${signalFrequency_Q} ;
+    ARRAY_COMPLEX ${noiseFrequency_I}, ${noiseFrequency_Q}; 
+    int ${siteNum} = SMC_SITE_NUMBER();
+ 
+    ARRAY_D ${signalWaveform_I} =  ${mSignalReceiveData}[${siteNum}-1].getReal();
+    ARRAY_D ${noiseWaveform_I} =  ${mNoiseReceiveData}[${siteNum}-1].getReal(); 
+    ARRAY_D ${signalWaveform_Q} =  ${mSignalReceiveData}[${siteNum}-1].getImag(); 
+    ARRAY_D ${noiseWaveform_Q} =  ${mNoiseReceiveData}[${siteNum}-1].getImag(); 
+
+    // calculate frequency of signal and noise
+    DSP_FFT(${signalWaveform_I}, ${signalFrequency_I}, RECT); 
+    DSP_FFT(${noiseWaveform_I}, ${noiseFrequency_I}, RECT); 
+    DSP_FFT(${signalWaveform_Q}, ${signalFrequency_Q}, RECT);
+    DSP_FFT(${noiseWaveform_Q}, ${noiseFrequency_Q}, RECT); 
+
+    // calculate indices of output power measurements 
+    ${sampleSize} = ${mSignalReceiveData}[${siteNum}-1].size();
+    ${binWidth} = ${sampleFrequency} / ${sampleSize};
+
+    // calculate signal input power (${signalInputPower}), from dBm to V^2
+    ${signalInputPower} = 50 * 1e-3 * pow(10,(${rfInputPower}/10));
+    
+    // calculate noise input power (${noiseInputPower}), from dBm to V^2
+    ${noiseInputPower} = -174.0 + 10 * log10(${basebandFrequencyNoiseFigureEnd} - ${basebandFrequencyNoiseFigureBegin}); 
+    ${noiseInputPower} = 50 * 1e-3 * pow(10,(${noiseInputPower}/10)); 
+
+    // calculate signal output power for I and Q channels (So)
+    ${indexForSignalOutput} = (int)(${basebandFrequency}/${binWidth});
+    ${signalOutputPower_I} = ${signalFrequency_I}[${indexForSignalOutput}].real() * ${signalFrequency_I}[${indexForSignalOutput}].real() 
+      + ${signalFrequency_I}[${indexForSignalOutput}].imag() * ${signalFrequency_I}[${indexForSignalOutput}].imag();
+    
+    ${signalOutputPower_Q} = ${signalFrequency_Q}[${indexForSignalOutput}].real() * ${signalFrequency_Q}[${indexForSignalOutput}].real() 
+      + ${signalFrequency_Q}[${indexForSignalOutput}].imag() * ${signalFrequency_Q}[${indexForSignalOutput}].imag();
+    
+    // calculate noise output power for I and Q channels (No)
+    ${noiseOutputPower_I} = 0;
+    ${noiseOutputPower_Q} = 0;
+    ${indexForNoiseOutputBegin} = (int)(${basebandFrequencyNoiseFigureBegin}/${binWidth});
+    ${indexForNoiseOutputEnd} = (int)(${basebandFrequencyNoiseFigureEnd}/${binWidth});
+    for (int i = ${indexForNoiseOutputBegin}; i &lt;= ${indexForNoiseOutputEnd}; i++)
+    {
+      ${noiseOutputPower_I} = ${noiseOutputPower_I} 
+        + ${noiseFrequency_I}[i].real() * ${noiseFrequency_I}[i].real() 
+        + ${noiseFrequency_I}[i].imag()*${noiseFrequency_I}[i].imag();
+      ${noiseOutputPower_Q} = ${noiseOutputPower_Q} 
+        + ${noiseFrequency_Q}[i].real() * ${noiseFrequency_Q}[i].real() 
+        + ${noiseFrequency_Q}[i].imag() * ${noiseFrequency_Q}[i].imag();
+    }
+    
+    // calculate noise figure
+    ${noiseFigure_I} = 10*log10( (${signalInputPower}/${noiseInputPower}) / (${signalOutputPower_I}/${noiseOutputPower_I}) );
+    ${noiseFigure_Q} = 10*log10( (${signalInputPower}/${noiseInputPower}) / (${signalOutputPower_Q}/${noiseOutputPower_Q}) );
+
+    // debug waveform
+    SMC_PUT_DEBUG("Dummy_Pin_I", "I Time for Signal Power Measurement", ${signalWaveform_I});
+    SMC_PUT_DEBUG("Dummy_Pin_I", "I Time for Noise Power Measurement",  ${noiseWaveform_I});
+    SMC_PUT_DEBUG("Dummy_Pin_Q", "Q Time for Signal Power Measurement", ${signalWaveform_Q});
+    SMC_PUT_DEBUG("Dummy_Pin_Q", "Q Time for Noise Power Measurement",  ${noiseWaveform_Q});
+
+    // datalog
+    SMC_TEST(${iPinName}, "nfI", V93kLimits::tmLimits, ${noiseFigure_I}, true);
+    SMC_TEST(${qPinName}, "nfQ", V93kLimits::tmLimits, ${noiseFigure_Q}, true);
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoRF_PhaseNoise_Measure">//do RF to RF loop back phase noise measurement
+//source a CW, 1GHz,0dBm
+//measure the Phase noise in dBc, at 5KHz,20KHz,100KHz,1MHz offset
+const string ${measName} = "RF2RFPhseNoise";
+const string ${rfPin} = "RF1";
+static int ${numOffsets};
+ON_FIRST_INVOCATION_BEGIN();
+  Analog.primary(${measName});
+  MEAS_DEF(${measName}).disableAll().connectAll();
+  EXECUTE_GROUP(${measName});
+
+  ${mMeasureParameters} = MEAS_DEF(${measName}).getParameters(1,0);
+  ${numOffsets} = (int)${mMeasureParameters}[TM::PN_NUM_OFFSETS];
+
+  MEAS_DEF(${measName}).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+${mReceiveData}[CURRENT_SITE_NUMBER()-1] = MEAS_DEF(${measName}).getComplexWaveform(); 
+SMC_ARM(${rfPin}, ${numOffsets});
+</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoRF_PhaseNoise_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES}= 256;
+  ARRAY_D ${mMeasureParameters};
+  ARRAY_COMPLEX ${mReceiveData}[${mSITES}];
+
+//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(
+    const string ${rfPinName}, 
+    const int ${numOffsets})
+  {
+    ARRAY_D ${measOffsetPwrs_dBc_Hz}(${numOffsets});
+    int ${siteNum} = SMC_SITE_NUMBER();
+    DSP_RF_PHASE_NOISE(${mReceiveData}[${siteNum}-1], ${mMeasureParameters},${measOffsetPwrs_dBc_Hz}); 
+    
+    // datalog
+    for(int i = 0; i &lt; ${numOffsets}; i++)
+    {
+       SMC_TEST(${rfPinName}, "PhaseNoise", V93kLimits::tmLimits, ${measOffsetPwrs_dBc_Hz}[i], true);
+    }    
+  }</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoRF_PowerOut_Measure">//do measurement for RF to RF CW power out test 
+string ${rfOutPin} = "RF2";
+string ${measName} = "ModMeas3Tone";
+static int ${myFreqListIndex} = 0;
+static bool ${isModulatedSignal} = false;
+
+ON_FIRST_INVOCATION_BEGIN();
+  Analog.primary(${measName});                    
+  MEAS_DEF(${measName}).disableAll().connectAll();
+  EXECUTE_GROUP(${measName});    
+  
+  MEAS_DEF(${measName}).get("FreqListIndex",${myFreqListIndex});
+  ${mMeasureParameters} = MEAS_DEF(${measName}).getParameters(1, ${myFreqListIndex});
+  string measSingalType;
+  MEAS_DEF(${measName}).get("MeasType", 1, measSingalType); 
+  ${isModulatedSignal} = (measSingalType.find("Mod Power Out") != string::npos); 
+
+  MEAS_DEF(${measName}).disableAll().disconnectAll();
+ON_FIRST_INVOCATION_END();
+
+${mReceiveData}[CURRENT_SITE_NUMBER()-1] = MEAS_DEF(${measName}).getComplexWaveform();  
+SMC_ARM(${rfOutPin}, ${isModulatedSignal});</template><template autoinsert="true" context="org.eclipse.cdt.ui.text.templates.c" deleted="false" description="[Version]: tml_7.1.4_2.1.6" enabled="true" name="V93000_RFtoRF_PowerOut_SMCPostProcess">//put these variables as members of test method class
+private:
+  const static int ${mSITES} = 256;
+  ARRAY_D ${mMeasureParameters};
+  ARRAY_COMPLEX ${mReceiveData}[${mSITES}];
+  
+//put this function as a member of test method class
+public:
+  void SMC_backgroundProcessing(const string ${rfOutPin}, const bool ${isModulatedSignal})
+  {
+    double ${powerOut};
+    int ${siteNum} = SMC_SITE_NUMBER();
+    if (${isModulatedSignal})
+    {
+      DSP_RF_MOD_POWER(${mReceiveData}[${siteNum}-1], ${mMeasureParameters}, DBM, ${siteNum}, &amp;${powerOut});     
+    }
+    else
+    {
+      DSP_RF_CW_POWER(${mReceiveData}[${siteNum}-1], ${mMeasureParameters}, ${siteNum}, &amp;${powerOut});
+    }
+    // datalog
+    SMC_TEST(${rfOutPin}, "PowerOut", V93kLimits::tmLimits, ${powerOut}, true);
+  }  </template></templates>
