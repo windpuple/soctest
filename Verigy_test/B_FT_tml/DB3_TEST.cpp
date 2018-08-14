@@ -135,13 +135,14 @@ protected:
 
 		FLEX_RELAY ac_relay;
 
-		for (k = 0; k < 9; k++) {
-		//for (k = 0; k < 5; k++) {
+		//for (k = 0; k < 9; k++) {
+		for (k = 8; k < 9; k++) {
 
 			ON_FIRST_INVOCATION_BEGIN();
 					DISCONNECT();
 					CONNECT();
 					relay.util("MUX0_OUT_K2,MUX0_OUT_K3,SEN01_K1").on();
+					relay.util("SEN01_K1").on();
 					//relay.util("SEN01_K1").on();
 					relay.wait(1.5 ms );
 					relay.execute();
@@ -436,7 +437,7 @@ protected:
 							SEQ_SINE_SEN1_MUX0_2MHZ).vOffset(0.0).filter(
 							"15M").dutImpedance("1000000");
 					SET_SINE_SEN1_MUX0_2MHZ.AWG(AWG_pin).min(0.3).max(0.9);
-					SET_SINE_SEN1_MUX0_1KHZ.AWG(AWG_pin).dc(0.0).ac(6.0);
+					//SET_SINE_SEN1_MUX0_1KHZ.AWG(AWG_pin).dc(0.0).ac(6.0);
 
 
 					///////////////////// DGT setting //////////////////////////
@@ -470,12 +471,14 @@ protected:
 
 					// Definition of the waveform
 
+
 					ANALOG_WAVEFORM sinewave_9_5MHZ("sinewave_9_5MHZ");
 
-					sinewave_9_5MHZ.definition(TM::SINE).periods(171).phase(0).samples(
+					sinewave_9_5MHZ.definition(TM::SINE).periods(291).phase(0).samples(
 							3072).min(-1.25).max(1.25);
 
 					// Sequencer Programs
+
 
 					ANALOG_SEQUENCER SEQ_SINE_SEN1_MUX0_9_5MHZ(
 							"SEQ_SINE_SEN1_MUX0_9_5MHZ");
@@ -488,19 +491,23 @@ protected:
 					SET_SINE_SEN1_MUX0_9_5MHZ.CLOCK_DOMAIN(2, TM::ANALOG).clock(
 							TM::MCLK_AUTO);
 					SET_SINE_SEN1_MUX0_9_5MHZ.AWG(AWG_pin).clockDomain(2).rule(
-							TM::AUTOFS).frequency(170000000);
+							TM::AUTOFS).frequency(100000000);
+
 
 					// hardware settings
 
-					SET_SINE_SEN1_MUX0_9_5MHZ.AWG(AWG_pin).coreFunction(TM::VHF).sequencerProgram(
+
+					SET_SINE_SEN1_MUX0_9_5MHZ.AWG(AWG_pin).coreFunction(TM::HF).sequencerProgram(
 							SEQ_SINE_SEN1_MUX0_9_5MHZ).vOffset(0.0).filter(
-							"58M").dutImpedance("1000000");
+							"THRU").dutImpedance("1000000");
 					SET_SINE_SEN1_MUX0_9_5MHZ.AWG(AWG_pin).min(0.3).max(0.9);
-					SET_SINE_SEN1_MUX0_1KHZ.AWG(AWG_pin).dc(0.0).ac(0.6);
+					//SET_SINE_SEN1_MUX0_1KHZ.AWG(AWG_pin).dc(0.0).ac(0.6);
+
 
 					///////////////////// DGT setting //////////////////////////
 
 					// Definition of the sequencer program
+
 
 					ANALOG_SEQUENCER SEQ_DGT_SEN1_MUX0_9_5MHZ(
 							"SEQ_DGT_SEN1_MUX0_9_5MHZ");
@@ -510,7 +517,7 @@ protected:
 
 					// clock setting
 					SET_SINE_SEN1_MUX0_9_5MHZ.DGT(DGT_pin).clockDomain(2).rule(
-							TM::AUTOFS).frequency(170000000);
+							TM::AUTOFS).frequency(100000000);
 
 					// hardware settings
 
@@ -531,7 +538,7 @@ protected:
 
 					ANALOG_WAVEFORM sinewave_29_5MHZ("sinewave_29_5MHZ");
 
-					sinewave_29_5MHZ.definition(TM::SINE).periods(533).phase(0).samples(
+					sinewave_29_5MHZ.definition(TM::SINE).periods(909).phase(0).samples(
 							3072).min(-1.25).max(1.25);
 
 					// Sequencer Programs
@@ -547,16 +554,16 @@ protected:
 					SET_SINE_SEN1_MUX0_29_5MHZ.CLOCK_DOMAIN(2, TM::ANALOG).clock(
 							TM::MCLK_AUTO);
 					SET_SINE_SEN1_MUX0_29_5MHZ.AWG(AWG_pin).clockDomain(2).rule(
-							TM::AUTOFS).frequency(170000000);
+							TM::AUTOFS).frequency(100000000);
 
 					// hardware settings
 
 					SET_SINE_SEN1_MUX0_29_5MHZ.AWG(AWG_pin).coreFunction(
-							TM::VHF).sequencerProgram(
+							TM::HF).sequencerProgram(
 							SEQ_SINE_SEN1_MUX0_29_5MHZ).vOffset(0.0).filter(
-							"58M").dutImpedance("1000000");
+							"THRU").dutImpedance("1000000");
 					SET_SINE_SEN1_MUX0_29_5MHZ.AWG(AWG_pin).min(0.3).max(0.9);
-					SET_SINE_SEN1_MUX0_1KHZ.AWG(AWG_pin).dc(0.0).ac(0.6);
+					//SET_SINE_SEN1_MUX0_1KHZ.AWG(AWG_pin).dc(0.0).ac(0.6);
 
 					///////////////////// DGT setting //////////////////////////
 
@@ -570,7 +577,7 @@ protected:
 
 					// clock setting
 					SET_SINE_SEN1_MUX0_29_5MHZ.DGT(DGT_pin).clockDomain(2).rule(
-							TM::AUTOFS).frequency(170000000);
+							TM::AUTOFS).frequency(100000000);
 
 					// hardware settings
 
@@ -592,7 +599,7 @@ protected:
 
 					ANALOG_WAVEFORM sinewave_39_5MHZ("sinewave_39_5MHZ");
 
-					sinewave_39_5MHZ.definition(TM::SINE).periods(713).phase(0).samples(
+					sinewave_39_5MHZ.definition(TM::SINE).periods(1213).phase(0).samples(
 							3072).min(-1.25).max(1.25);
 
 					// Sequencer Programs
@@ -608,14 +615,14 @@ protected:
 					SET_SINE_SEN1_MUX0_39_5MHZ.CLOCK_DOMAIN(2, TM::ANALOG).clock(
 							TM::MCLK_AUTO);
 					SET_SINE_SEN1_MUX0_39_5MHZ.AWG(AWG_pin).clockDomain(2).rule(
-							TM::AUTOFS).frequency(170000000);
+							TM::AUTOFS).frequency(100000000);
 
 					// hardware settings
 
 					SET_SINE_SEN1_MUX0_39_5MHZ.AWG(AWG_pin).coreFunction(
-							TM::VHF).sequencerProgram(
+							TM::HF).sequencerProgram(
 							SEQ_SINE_SEN1_MUX0_39_5MHZ).vOffset(0.0).filter(
-							"58M").dutImpedance("1000000");
+							"THRU").dutImpedance("1000000");
 					SET_SINE_SEN1_MUX0_39_5MHZ.AWG(AWG_pin).min(0.3).max(0.9);
 					//SET_SINE_SEN1_MUX0_1KHZ.AWG(AWG_pin).dc(1.0).ac(3.0);
 
@@ -632,7 +639,7 @@ protected:
 
 					// clock setting
 					SET_SINE_SEN1_MUX0_39_5MHZ.DGT(DGT_pin).clockDomain(2).rule(
-							TM::AUTOFS).frequency(170000000);
+							TM::AUTOFS).frequency(100000000);
 
 					// hardware settings
 
@@ -654,7 +661,7 @@ protected:
 
 					ANALOG_WAVEFORM sinewave_50MHZ("sinewave_50MHZ");
 
-					sinewave_50MHZ.definition(TM::SINE).periods(903).phase(0).samples(
+					sinewave_50MHZ.definition(TM::SINE).periods(912).phase(0).samples(
 							3072).min(-1.25).max(1.25);
 
 					// Sequencer Programs
@@ -675,10 +682,10 @@ protected:
 					// hardware settings
 
 					SET_SINE_SEN1_MUX0_50MHZ.AWG(AWG_pin).coreFunction(TM::VHF).sequencerProgram(
-							SEQ_SINE_SEN1_MUX0_50MHZ).vOffset(0.0).filter("58M").dutImpedance(
+							SEQ_SINE_SEN1_MUX0_50MHZ).vOffset(0.0).filter("THRU").dutImpedance(
 							"1000000");
 					SET_SINE_SEN1_MUX0_50MHZ.AWG(AWG_pin).min(0.3).max(0.9);
-					SET_SINE_SEN1_MUX0_1KHZ.AWG(AWG_pin).dc(0.0).ac(0.6);
+					//SET_SINE_SEN1_MUX0_1KHZ.AWG(AWG_pin).dc(0.0).ac(0.6);
 
 					///////////////////// DGT setting //////////////////////////
 

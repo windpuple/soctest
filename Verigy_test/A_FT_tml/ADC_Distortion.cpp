@@ -164,11 +164,11 @@ protected:
 					<< "dB" << endl;
 		}
 
-		TEST("AWG_pin", "ADC_SNR", LIMIT(TM::GE, 45, TM::LE, 90),
+		TEST("AWG_pin", "ADC_SNR", LIMIT(TM::GE, 45, TM::LE, 98),
 				thd_result.snr, TM::CONTINUE);
-		TEST("AWG_pin", "ADC_SNR", LIMIT(TM::GE, -90, TM::LE, -45),
+		TEST("AWG_pin", "ADC_SNR", LIMIT(TM::GE, -98, TM::LE, -45),
 				thd_result.thd, TM::CONTINUE);
-		TEST("AWG_pin", "ADC_SNR", LIMIT(TM::GE, 45, TM::LE, 90),
+		TEST("AWG_pin", "ADC_SNR", LIMIT(TM::GE, 45, TM::LE, 98),
 				thd_result.snd, TM::CONTINUE);
 
 		return;

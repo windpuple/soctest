@@ -14,6 +14,7 @@ using namespace std;
 class TOFF_ENZ_TMU_MEASURE: public testmethod::TestMethod {
 protected:
 	double mtreshold_a;
+	double mtreshold_b;
 	int mPrescaler;
 	int mSamples;
 	int mDebug_Print;
@@ -23,6 +24,8 @@ protected:
 	virtual void initialize() {
 
 		addParameter("treshold_a", "double", &mtreshold_a,
+				testmethod::TM_PARAMETER_INPUT) .setDefault("0.0");
+		addParameter("treshold_b", "double", &mtreshold_b,
 				testmethod::TM_PARAMETER_INPUT) .setDefault("0.0");
 		addParameter("Prescaler", "int", &mPrescaler,
 				testmethod::TM_PARAMETER_INPUT) .setDefault("1");
@@ -48,7 +51,7 @@ protected:
 
 	virtual void run() {
 
-		TMU_TASK task1;
+		TMU_TASK task1, task2, task3;
 
 		FLEX_RELAY ac_relay;
 		FLEX_RELAY relay;
@@ -86,10 +89,16 @@ protected:
 		 vector_label_SENADDR1.downloadUserVectors(vec_data[5], 98);
 		 vector_label_SENADDR0.downloadUserVectors(vec_data[6], 98);
 		 */
+
+
+		TMU_RESULTS tmuResult1[2],tmuResult2[2], tmuResult3[2];
+		ARRAY_D value1[2],value2[2],value3[2];
+		DOUBLE meanvalue0A[2], meanvalue0B[2], meanvalue0C[2];
+
 		int k = 0;
 
-		//for(k = 0; k < 98 ; k++) {
-		for (k = 0; k < 98; k++) {
+		for(k = 0; k < 98 ; k++) {
+		//for (k = 0; k < 2; k++) {
 
 			ON_FIRST_INVOCATION_BEGIN();
 					DISCONNECT();
@@ -229,7 +238,8 @@ protected:
 					task1.pin("MUX0OUTB").setEdgeSelect(TMU::FALL).setNumSamples(
 							mSamples).setNumMeasurements(1).setNumShots(1);
 					task1.pin("MUX0OUTB").setDatarate(1.0 / (datarate * 2));
-					task1.pin("MUX0OUTB").setAThreshold(mtreshold_a);
+					task1.pin("MUX0OUTB").setAThreshold(mtreshold_b);
+
 
 					LEVEL_SPEC spec1(2, 1);
 
@@ -261,29 +271,23 @@ protected:
 
 				ON_FIRST_INVOCATION_END();
 
-			TMU_RESULTS tmuResult[2];
-
 
 			for (int i = 0; i < 2; i++) {
 
-				task1.pin(TMUGROUP[i]).uploadRawResults(tmuResult[i]);
+				task1.pin(TMUGROUP[i]).uploadRawResults(tmuResult1[i]);
 
 			}
 
 
-
-			ARRAY_D value[2];
-			DOUBLE meanvalue0[2];
-
 			for (int i = 0; i < 2; i++) {
 
-				meanvalue0[i] = 0.0;
+				meanvalue0A[i] = 0.0;
 
 			}
 
 			for (int i = 0; i < 2; i++) {
 
-				tmuResult[i].getPinMeasuredResults(TMUGROUP[i], value[i],
+				tmuResult1[i].getPinMeasuredResults(TMUGROUP[i], value1[i],
 						TMU::APP_RAW);
 
 			}
@@ -295,39 +299,598 @@ protected:
 				for (int i = 0; i < 2; i++) {
 					for (int j = 0; j < mSamples; j++) {
 
-						printf("value%d %d: %.20f\n", i, j, value[i][j]);
+						printf("value1%d %d: %.20f\n", i, j, value1[i][j]);
 
 					}
 
-					PUT_DEBUG("value", "value raw data", value[i]);
+					PUT_DEBUG("value1", "value1 raw data", value1[i]);
 
 				}
 
 			}
+
+
+			int recount0 = mSamples;
 
 			for (int i = 0; i < 2; i++) {
-				for (int j = 0; j < mSamples; j++) {
+					for (int j = 0; j < mSamples; j++) {
 
-					meanvalue0[i] = meanvalue0[i] + (value[0][j] - value[i][j]);
+						double subvalue0 = value1[0][j] - value1[i][j];
 
-					//cout <<"ADRESS :"<<k<< " meanvalue0[i]:" <<i<<":"<<j<<":"<<"value[0][j]: "<<value[0][j]<<"- value[i][j]: "<<value[i][j]<<" === "<<value[0][j] - value[i][j] << endl;
+						if (subvalue0 < 15 * 1e-9 || subvalue0 > 100 * 1e-9) {
+
+							subvalue0 = 0.0;
+
+							meanvalue0A[i] = meanvalue0A[i] + subvalue0;
+
+							recount0 = recount0 - 1;
+						} else {
+
+							meanvalue0A[i] = meanvalue0A[i] + subvalue0;
+
+						}
+
+
+
+						//cout << "meanvalue0B[i]" <<i<<":"<<"value2[0][j] - value2[i][j]:"<<value2[0][j] - value2[i][j] << endl;
+						//cout << "meanvalue1B[i]" <<i<<":"<<"value2[1][j] - value2[i][j]:"<<value2[1][j] - value2[i][j] << endl;
+						//cout << "meanvalue2B[i]" <<i<<":"<<"value3[1][j] - value2[i][j]:"<<value3[1][j] - value3[i][j] << endl;
+					}
+
+					meanvalue0A[i] = meanvalue0A[i] / recount0;
+
+
+					//cout << "meanvalue0B[i] :"<<i<<":"<< meanvalue0B[i]<<endl;
+					//cout << "meanvalue1B[i] :"<<i<<":"<< meanvalue1B[i]<<endl;
+
+					recount0 = mSamples;
 
 				}
 
-				meanvalue0[i] = meanvalue0[i] / mSamples;
 
-				//cout <<"ADDRESS :"<< k<< " meanvalue0[i] :"<<i<<":"<< meanvalue0[i]<<endl;
+				//// SECOND TEST
 
-			}
+				ON_FIRST_INVOCATION_BEGIN();
+						DISCONNECT();
+
+						CONNECT();
+
+						relay.util("MUX0_OUT_K5").on();
+						relay.wait(1.5 ms );
+						relay.execute();
+
+						ac_relay.pin("@").set("IDLE", "OFF");
+						ac_relay.wait(1.5 ms );
+						ac_relay.execute();
+
+						ac_relay.pin(
+								"SENADDR0,SENADDR1,SENADDR2,SENADDR3,SENADDR4,SENADDR5,SENADDR6,COMMMODE, BLEN, INPUTMODE, MUXEN, OSCON, MUX0OUTB").set(
+								"AC", "OFF");
+						ac_relay.pin("SENGRP").set("AC", "OFF");
+						ac_relay.wait(1.5 ms );
+						ac_relay.execute();
+
+						string vector_lable = Primary.getLabel();
+						if (mDebug_Print) {
+							cout << "primary vector_lable = " << vector_lable
+									<< endl;
+						}
+
+						//FOR_EACH_SITE_BEGIN();
+
+						string AddressCode = DecimalToBinaryString(k);
+
+						AddressCode = AddressCode.substr(24);
+
+						//cout << "Addresscode :" << AddressCode << endl;
+
+						for (int j = 0; j < 99; j++) {
+
+							if (j == 98) {
+
+								vec_data0[j].phyWvfIndex = -1;
+								vec_data0[j].vectorNum = -1;
+								vec_data1[j].phyWvfIndex = -1;
+								vec_data1[j].vectorNum = -1;
+								vec_data2[j].phyWvfIndex = -1;
+								vec_data2[j].vectorNum = -1;
+								vec_data3[j].phyWvfIndex = -1;
+								vec_data3[j].vectorNum = -1;
+								vec_data4[j].phyWvfIndex = -1;
+								vec_data4[j].vectorNum = -1;
+								vec_data5[j].phyWvfIndex = -1;
+								vec_data5[j].vectorNum = -1;
+								vec_data6[j].phyWvfIndex = -1;
+								vec_data6[j].vectorNum = -1;
+
+								//cout << "Addresscode " << j << ":" << (int) (AddressCode.at(0)
+								//		- '0') << (int) (AddressCode.at(1) - '0')
+								//<< (int) (AddressCode.at(2) - '0')
+								//<< (int) (AddressCode.at(3) - '0')
+								//<< (int) (AddressCode.at(4) - '0')
+								//<< (int) (AddressCode.at(5) - '0')
+								//<< (int) (AddressCode.at(6) - '0') << endl;
+
+								//cout << "vec_data" << j << "phyWvfIndex :"
+								//<< vec_data0[j].phyWvfIndex << vec_data1[j].phyWvfIndex
+								//<< vec_data2[j].phyWvfIndex << vec_data3[j].phyWvfIndex
+								//<< vec_data4[j].phyWvfIndex << vec_data5[j].phyWvfIndex
+								//<< vec_data6[j].phyWvfIndex << endl;
+
+								//cout << "vec_data" << j << "vectorNum :"
+								//<< vec_data0[j].vectorNum << vec_data1[j].vectorNum
+								//<< vec_data2[j].vectorNum << vec_data3[j].vectorNum
+								//<< vec_data4[j].vectorNum << vec_data5[j].vectorNum
+								//<< vec_data6[j].vectorNum << endl;
+
+							} else {
+
+								vec_data0[j].phyWvfIndex = (int) (AddressCode.at(0)
+										- '0');
+								vec_data0[j].vectorNum = j;
+								vec_data1[j].phyWvfIndex = (int) (AddressCode.at(1)
+										- '0');
+								vec_data1[j].vectorNum = j;
+								vec_data2[j].phyWvfIndex = (int) (AddressCode.at(2)
+										- '0');
+								vec_data2[j].vectorNum = j;
+								vec_data3[j].phyWvfIndex = (int) (AddressCode.at(3)
+										- '0');
+								vec_data3[j].vectorNum = j;
+								vec_data4[j].phyWvfIndex = (int) (AddressCode.at(4)
+										- '0');
+								vec_data4[j].vectorNum = j;
+								vec_data5[j].phyWvfIndex = (int) (AddressCode.at(5)
+										- '0');
+								vec_data5[j].vectorNum = j;
+								vec_data6[j].phyWvfIndex = (int) (AddressCode.at(6)
+										- '0');
+								vec_data6[j].vectorNum = j;
+
+								//cout << "Addresscode " << j << ":" << (int) (AddressCode.at(0)
+								//		- '0') << (int) (AddressCode.at(1) - '0')
+								//<< (int) (AddressCode.at(2) - '0')
+								//<< (int) (AddressCode.at(3) - '0')
+								//<< (int) (AddressCode.at(4) - '0')
+								//<< (int) (AddressCode.at(5) - '0')
+								//<< (int) (AddressCode.at(6) - '0') << endl;
+
+								//cout << "vec_data" << j << "phyWvfIndex :"
+								//<< vec_data0[j].phyWvfIndex << vec_data1[j].phyWvfIndex
+								//<< vec_data2[j].phyWvfIndex << vec_data3[j].phyWvfIndex
+								//<< vec_data4[j].phyWvfIndex << vec_data5[j].phyWvfIndex
+								//<< vec_data6[j].phyWvfIndex << endl;
+
+								//cout << "vec_data" << j << "vectorNum :"
+								//<< vec_data0[j].vectorNum << vec_data1[j].vectorNum
+								//<< vec_data2[j].vectorNum << vec_data3[j].vectorNum
+								//<< vec_data4[j].vectorNum << vec_data5[j].vectorNum
+								//<< vec_data6[j].vectorNum << endl;
+							}
+						}
+
+						vector_label.downloadUserVectors(
+								"SENADDR6, SENADDR5, SENADDR4, SENADDR3, SENADDR2, SENADDR1, SENADDR0",
+								vec_data0, vec_data1, vec_data2, vec_data3,
+								vec_data4, vec_data5, vec_data6);
+
+						double datarate = Primary.getTimingSpec().getSpecValue(
+								"per_3250") * 1e-9;
+
+						//cout << "datarate " << datarate << endl;
+
+						//task1.pin("TMUPIN").setDatarate(1/(datarate*2)).setEdgeSelect(TMU::FALL).setNumSamples(mSamples).setNumMeasurements(1).setNumShots(1);
+						task2.pin("MUXEN").setEdgeSelect(TMU::RISE).setNumSamples(
+								mSamples).setNumMeasurements(1).setNumShots(1);
+						task2.pin("MUXEN").setDatarate(1.0 / (datarate * 2));
+						task2.pin("MUXEN").setAThreshold(mtreshold_a);
+
+						task2.pin("MUX0OUTB").setEdgeSelect(TMU::FALL).setNumSamples(
+								mSamples).setNumMeasurements(1).setNumShots(1);
+						task2.pin("MUX0OUTB").setDatarate(1.0 / (datarate * 2));
+						task2.pin("MUX0OUTB").setAThreshold(mtreshold_b);
+
+
+						LEVEL_SPEC spec1(2, 1);
+
+						Primary.level(spec1);
+
+						Primary.getLevelSpec().change("SEN_LEVEL", 3.3);
+
+						task2.setAsPrimary();
+
+						task2.setup();
+
+						FLUSH();
+
+						//Sequencer.run(TM::NORMAL); don't vector repeat TMU measure.
+						//EXECUTE_TEST(); don't vector repeat TMU measure.
+						//START_TEST(); don't vector repeat TMU measure.
+						FUNCTIONAL_TEST(); // only this API do success
+
+						//FOR_EACH_SITE_END();
+
+
+						ac_relay.pin("@").set("AC", "OFF");
+						ac_relay.wait(1.5 ms );
+						ac_relay.execute();
+
+						relay.util("MUX0_OUT_K5").off();
+						relay.wait(1.5 ms );
+						relay.execute();
+
+					ON_FIRST_INVOCATION_END();
+
+
+				for (int i = 0; i < 2; i++) {
+
+					task2.pin(TMUGROUP[i]).uploadRawResults(tmuResult2[i]);
+
+				}
+
+
+				for (int i = 0; i < 2; i++) {
+
+					meanvalue0B[i] = 0.0;
+
+				}
+
+				for (int i = 0; i < 2; i++) {
+
+					tmuResult2[i].getPinMeasuredResults(TMUGROUP[i], value2[i],
+							TMU::APP_RAW);
+
+				}
+
+
+
+
+				if (mDebug_Print) {
+					for (int i = 0; i < 2; i++) {
+						for (int j = 0; j < mSamples; j++) {
+
+							printf("value2%d %d: %.20f\n", i, j, value2[i][j]);
+
+						}
+
+						PUT_DEBUG("value2", "value2 raw data", value2[i]);
+
+					}
+
+				}
+
+
+				recount0 = mSamples;
+
+				for (int i = 0; i < 2; i++) {
+						for (int j = 0; j < mSamples; j++) {
+
+							double subvalue0 = value2[0][j] - value2[i][j];
+
+							if (subvalue0 < 15 * 1e-9 || subvalue0 > 100 * 1e-9) {
+
+								subvalue0 = 0.0;
+
+								meanvalue0B[i] = meanvalue0B[i] + subvalue0;
+
+								recount0 = recount0 - 1;
+							} else {
+
+								meanvalue0B[i] = meanvalue0B[i] + subvalue0;
+
+							}
+
+
+
+							//cout << "meanvalue0B[i]" <<i<<":"<<"value2[0][j] - value2[i][j]:"<<value2[0][j] - value2[i][j] << endl;
+							//cout << "meanvalue1B[i]" <<i<<":"<<"value2[1][j] - value2[i][j]:"<<value2[1][j] - value2[i][j] << endl;
+							//cout << "meanvalue2B[i]" <<i<<":"<<"value3[1][j] - value2[i][j]:"<<value3[1][j] - value3[i][j] << endl;
+						}
+
+						meanvalue0B[i] = meanvalue0B[i] / recount0;
+
+
+						//cout << "meanvalue0B[i] :"<<i<<":"<< meanvalue0B[i]<<endl;
+						//cout << "meanvalue1B[i] :"<<i<<":"<< meanvalue1B[i]<<endl;
+
+						recount0 = mSamples;
+
+					}
+
+
+
+				//// THIRD TEST
+
+				ON_FIRST_INVOCATION_BEGIN();
+						DISCONNECT();
+
+						CONNECT();
+
+						relay.util("MUX0_OUT_K5").on();
+						relay.wait(1.5 ms );
+						relay.execute();
+
+						ac_relay.pin("@").set("IDLE", "OFF");
+						ac_relay.wait(1.5 ms );
+						ac_relay.execute();
+
+						ac_relay.pin(
+								"SENADDR0,SENADDR1,SENADDR2,SENADDR3,SENADDR4,SENADDR5,SENADDR6,COMMMODE, BLEN, INPUTMODE, MUXEN, OSCON, MUX0OUTB").set(
+								"AC", "OFF");
+						ac_relay.pin("SENGRP").set("AC", "OFF");
+						ac_relay.wait(1.5 ms );
+						ac_relay.execute();
+
+						string vector_lable = Primary.getLabel();
+						if (mDebug_Print) {
+							cout << "primary vector_lable = " << vector_lable
+									<< endl;
+						}
+
+						//FOR_EACH_SITE_BEGIN();
+
+						string AddressCode = DecimalToBinaryString(k);
+
+						AddressCode = AddressCode.substr(24);
+
+						//cout << "Addresscode :" << AddressCode << endl;
+
+						for (int j = 0; j < 99; j++) {
+
+							if (j == 98) {
+
+								vec_data0[j].phyWvfIndex = -1;
+								vec_data0[j].vectorNum = -1;
+								vec_data1[j].phyWvfIndex = -1;
+								vec_data1[j].vectorNum = -1;
+								vec_data2[j].phyWvfIndex = -1;
+								vec_data2[j].vectorNum = -1;
+								vec_data3[j].phyWvfIndex = -1;
+								vec_data3[j].vectorNum = -1;
+								vec_data4[j].phyWvfIndex = -1;
+								vec_data4[j].vectorNum = -1;
+								vec_data5[j].phyWvfIndex = -1;
+								vec_data5[j].vectorNum = -1;
+								vec_data6[j].phyWvfIndex = -1;
+								vec_data6[j].vectorNum = -1;
+
+								//cout << "Addresscode " << j << ":" << (int) (AddressCode.at(0)
+								//		- '0') << (int) (AddressCode.at(1) - '0')
+								//<< (int) (AddressCode.at(2) - '0')
+								//<< (int) (AddressCode.at(3) - '0')
+								//<< (int) (AddressCode.at(4) - '0')
+								//<< (int) (AddressCode.at(5) - '0')
+								//<< (int) (AddressCode.at(6) - '0') << endl;
+
+								//cout << "vec_data" << j << "phyWvfIndex :"
+								//<< vec_data0[j].phyWvfIndex << vec_data1[j].phyWvfIndex
+								//<< vec_data2[j].phyWvfIndex << vec_data3[j].phyWvfIndex
+								//<< vec_data4[j].phyWvfIndex << vec_data5[j].phyWvfIndex
+								//<< vec_data6[j].phyWvfIndex << endl;
+
+								//cout << "vec_data" << j << "vectorNum :"
+								//<< vec_data0[j].vectorNum << vec_data1[j].vectorNum
+								//<< vec_data2[j].vectorNum << vec_data3[j].vectorNum
+								//<< vec_data4[j].vectorNum << vec_data5[j].vectorNum
+								//<< vec_data6[j].vectorNum << endl;
+
+							} else {
+
+								vec_data0[j].phyWvfIndex = (int) (AddressCode.at(0)
+										- '0');
+								vec_data0[j].vectorNum = j;
+								vec_data1[j].phyWvfIndex = (int) (AddressCode.at(1)
+										- '0');
+								vec_data1[j].vectorNum = j;
+								vec_data2[j].phyWvfIndex = (int) (AddressCode.at(2)
+										- '0');
+								vec_data2[j].vectorNum = j;
+								vec_data3[j].phyWvfIndex = (int) (AddressCode.at(3)
+										- '0');
+								vec_data3[j].vectorNum = j;
+								vec_data4[j].phyWvfIndex = (int) (AddressCode.at(4)
+										- '0');
+								vec_data4[j].vectorNum = j;
+								vec_data5[j].phyWvfIndex = (int) (AddressCode.at(5)
+										- '0');
+								vec_data5[j].vectorNum = j;
+								vec_data6[j].phyWvfIndex = (int) (AddressCode.at(6)
+										- '0');
+								vec_data6[j].vectorNum = j;
+
+								//cout << "Addresscode " << j << ":" << (int) (AddressCode.at(0)
+								//		- '0') << (int) (AddressCode.at(1) - '0')
+								//<< (int) (AddressCode.at(2) - '0')
+								//<< (int) (AddressCode.at(3) - '0')
+								//<< (int) (AddressCode.at(4) - '0')
+								//<< (int) (AddressCode.at(5) - '0')
+								//<< (int) (AddressCode.at(6) - '0') << endl;
+
+								//cout << "vec_data" << j << "phyWvfIndex :"
+								//<< vec_data0[j].phyWvfIndex << vec_data1[j].phyWvfIndex
+								//<< vec_data2[j].phyWvfIndex << vec_data3[j].phyWvfIndex
+								//<< vec_data4[j].phyWvfIndex << vec_data5[j].phyWvfIndex
+								//<< vec_data6[j].phyWvfIndex << endl;
+
+								//cout << "vec_data" << j << "vectorNum :"
+								//<< vec_data0[j].vectorNum << vec_data1[j].vectorNum
+								//<< vec_data2[j].vectorNum << vec_data3[j].vectorNum
+								//<< vec_data4[j].vectorNum << vec_data5[j].vectorNum
+								//<< vec_data6[j].vectorNum << endl;
+							}
+						}
+
+						vector_label.downloadUserVectors(
+								"SENADDR6, SENADDR5, SENADDR4, SENADDR3, SENADDR2, SENADDR1, SENADDR0",
+								vec_data0, vec_data1, vec_data2, vec_data3,
+								vec_data4, vec_data5, vec_data6);
+
+						double datarate = Primary.getTimingSpec().getSpecValue(
+								"per_3250") * 1e-9;
+
+						//cout << "datarate " << datarate << endl;
+
+						//task1.pin("TMUPIN").setDatarate(1/(datarate*2)).setEdgeSelect(TMU::FALL).setNumSamples(mSamples).setNumMeasurements(1).setNumShots(1);
+						task3.pin("MUXEN").setEdgeSelect(TMU::RISE).setNumSamples(
+								mSamples).setNumMeasurements(1).setNumShots(1);
+						task3.pin("MUXEN").setDatarate(1.0 / (datarate * 2));
+						task3.pin("MUXEN").setAThreshold(mtreshold_a);
+
+						task3.pin("MUX0OUTB").setEdgeSelect(TMU::FALL).setNumSamples(
+								mSamples).setNumMeasurements(1).setNumShots(1);
+						task3.pin("MUX0OUTB").setDatarate(1.0 / (datarate * 2));
+						task3.pin("MUX0OUTB").setAThreshold(mtreshold_b);
+
+
+						LEVEL_SPEC spec1(2, 1);
+
+						Primary.level(spec1);
+
+						Primary.getLevelSpec().change("SEN_LEVEL", 3.3);
+
+						task3.setAsPrimary();
+
+						task3.setup();
+
+						FLUSH();
+
+						//Sequencer.run(TM::NORMAL); don't vector repeat TMU measure.
+						//EXECUTE_TEST(); don't vector repeat TMU measure.
+						//START_TEST(); don't vector repeat TMU measure.
+						FUNCTIONAL_TEST(); // only this API do success
+
+						//FOR_EACH_SITE_END();
+
+
+						ac_relay.pin("@").set("AC", "OFF");
+						ac_relay.wait(1.5 ms );
+						ac_relay.execute();
+
+						relay.util("MUX0_OUT_K5").off();
+						relay.wait(1.5 ms );
+						relay.execute();
+
+					ON_FIRST_INVOCATION_END();
+
+
+				for (int i = 0; i < 2; i++) {
+
+					task3.pin(TMUGROUP[i]).uploadRawResults(tmuResult2[i]);
+
+				}
+
+
+				for (int i = 0; i < 2; i++) {
+
+					meanvalue0C[i] = 0.0;
+
+				}
+
+				for (int i = 0; i < 2; i++) {
+
+					tmuResult3[i].getPinMeasuredResults(TMUGROUP[i], value3[i],
+							TMU::APP_RAW);
+
+				}
+
+
+
+
+				if (mDebug_Print) {
+					for (int i = 0; i < 2; i++) {
+						for (int j = 0; j < mSamples; j++) {
+
+							printf("value2%d %d: %.20f\n", i, j, value3[i][j]);
+
+						}
+
+						PUT_DEBUG("value2", "value2 raw data", value3[i]);
+
+					}
+
+				}
+
+
+				recount0 = mSamples;
+
+				for (int i = 0; i < 2; i++) {
+						for (int j = 0; j < mSamples; j++) {
+
+							double subvalue0 = value3[0][j] - value3[i][j];
+
+							if (subvalue0 < 15 * 1e-9 || subvalue0 > 100 * 1e-9) {
+
+								subvalue0 = 0.0;
+
+								meanvalue0C[i] = meanvalue0C[i] + subvalue0;
+
+								recount0 = recount0 - 1;
+							} else {
+
+								meanvalue0C[i] = meanvalue0C[i] + subvalue0;
+
+							}
+
+							//cout << "meanvalue0B[i]" <<i<<":"<<"value2[0][j] - value2[i][j]:"<<value2[0][j] - value2[i][j] << endl;
+							//cout << "meanvalue1B[i]" <<i<<":"<<"value2[1][j] - value2[i][j]:"<<value2[1][j] - value2[i][j] << endl;
+							//cout << "meanvalue2B[i]" <<i<<":"<<"value3[1][j] - value2[i][j]:"<<value3[1][j] - value3[i][j] << endl;
+						}
+
+						meanvalue0C[i] = meanvalue0C[i] / recount0;
+
+
+						//cout << "meanvalue0B[i] :"<<i<<":"<< meanvalue0B[i]<<endl;
+						//cout << "meanvalue1B[i] :"<<i<<":"<< meanvalue1B[i]<<endl;
+
+						recount0 = mSamples;
+
+					}
+
+
+
+
+
+
+				double meavalue0_final[2];
+
+					for (int i = 0; i < 2; i++) {
+
+						//cout << "meanvalue0A[" << i << "] : " << meanvalue0A[i] << endl;
+						//cout << "meanvalue0B[" << i << "] : " << meanvalue0B[i] << endl;
+						//cout << "meanvalue0C[" << i << "] : " << meanvalue0C[i] << endl;
+
+
+
+						if (meanvalue0A[i] > 0.0) {
+
+							meavalue0_final[i] = meanvalue0A[i];
+
+						} else if (meanvalue0B[i] > 0.0) {
+
+							meavalue0_final[i] = meanvalue0B[i];
+
+						} else if (meanvalue0C[i] > 0.0) {
+
+							meavalue0_final[i] = meanvalue0C[i];
+
+						} else {
+
+							meavalue0_final[i] = 0.0;
+
+						}
+
+
+					}
+
 
 			//determine DUT data rate received
 
 			cout << " TOFF ENZ Code " << k
 					<< " MUX0OUT value (via measured value) = "
-					<< meanvalue0[1] * 1e9 << " NS" << endl;
+					<< meavalue0_final[1] * 1e9 << " NS" << endl;
 
 			TEST(TMUGROUP[0], "TOFF ENZ MUX0 Test", LIMIT(TM::GE, 0.0, TM::LE,
-					10.0), meanvalue0[1] * 1e9, TM::CONTINUE);
+					10.0), meavalue0_final[1] * 1e9, TM::CONTINUE);
 
 		}
 

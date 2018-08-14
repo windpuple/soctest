@@ -54,6 +54,7 @@ protected:
 
 		int site_num;
 
+		/*
 		ON_FIRST_INVOCATION_BEGIN();
 
 				DISCONNECT();
@@ -94,6 +95,7 @@ protected:
 				//Sequencer.abort();
 
 				Sequencer.reset();
+				FLUSH();
 
 				ac_relay.pin("@").set("AC", "OFF");
 				ac_relay.wait(1.5 ms );
@@ -103,7 +105,10 @@ protected:
 
 		iVCCD1 = dps_meas1.getValue("VCCD"); //retrun A
 		iVCCA1 = dps_meas1.getValue("VCCA");
+		*/
 
+
+		/* sidd display SKIP
 		site_num = CURRENT_SITE_NUMBER();
 		if (mdebug) {
 			cout << "SITE:" << site_num << "@IDS_VCCD:" << iVCCD1
@@ -113,18 +118,19 @@ protected:
 			cout << "SITE:" << site_num << "@IDS_VCCA:" << iVCCA1 * 1.0e3
 					<< "mA" << endl;
 		}
-
+		*/
 
 	    ON_FIRST_INVOCATION_BEGIN();
+	    DISCONNECT();
 	    CONNECT();
 
-	    Primary.label("PGM_MUX_0_DIDD");
+	    //Primary.label("PGM_MUX_0_DIDD");
 
 	    dps_meas2.pin("@"); //This function returns the reference to the DPS_PIN_TASK class object that represents the mea
 	    dps_meas2.execMode(TM::PVAL); //This member function selects the execution mode.
 
 
-	    dps_meas2.pin("VCCD").min(0.0 A).max(0.01 A);
+	    dps_meas2.pin("VCCD").min(0.0 A).max(0.1 A);
 	    dps_meas2.pin("VCCA").min(0.0 A).max(0.1 A);
 
 	    dps_meas2.trigMode(TM::INTERNAL);
@@ -157,6 +163,7 @@ protected:
 	    dps_meas2.execute();
 
 	    Sequencer.abort();
+		FLUSH();
 
 		ac_relay.pin("@").set("AC", "OFF");
 		ac_relay.wait(1.5 ms );
@@ -170,10 +177,10 @@ protected:
 
 	    site_num = CURRENT_SITE_NUMBER();
 	    if(mdebug){cout<<"SITE:" << site_num << "@IDD_VCCD:"  <<iVCCD2*1.0e3<<"mA"<<endl;}
-	    //if(mdebug){cout<<"SITE:" << site_num << "@IDD_VCCA:"  <<(iVCCA2-iVCCA1)*1.0e3<<"mA"<<endl;}
+	    //if(mdebug){cout<<"SITE:" << site_num << "@IDD_VCCA:"  <<(iVCCA2)*1.0e3<<"mA"<<endl;}
 
-	    TEST("IDD_VCCD",   "IDD_VCCD", LIMIT(TM::GT,   0.0 MA, TM::LT,   0.015 MA),   iVCCD2,   TM::CONTINUE);
-	    //TEST("IDD_VCCA",   "IDD_VCCA", LIMIT(TM::GT,  0.0 MA, TM::LT,  20.0 MA),     (iVCCA2-iVCCA1),   TM::CONTINUE);
+	    TEST("IDD_VCCD",   "IDD_VCCD", LIMIT(TM::GT,   0.0 MA, TM::LT,   0.5 MA),   iVCCD2,   TM::CONTINUE);
+	    //TEST("IDD_VCCA",   "IDD_VCCA", LIMIT(TM::GT,  0.0 MA, TM::LT,  20.0 MA),     (iVCCA2),   TM::CONTINUE);
 
 	    return;
   }

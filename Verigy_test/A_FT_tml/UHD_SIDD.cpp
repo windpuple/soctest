@@ -11,7 +11,7 @@ using namespace std;
  * class is created.
  */
 
-class DIDD: public testmethod::TestMethod {
+class UHD_SIDD: public testmethod::TestMethod {
 protected:
   double  mWait_time;
   int   mdebug;
@@ -59,27 +59,27 @@ protected:
 	    dps_meas.execMode(TM::PVAL); //This member function selects the execution mode.
 
 
-	    dps_meas.pin("VDDQDDR").min(0.0 A).max(1.0 A);
-	    dps_meas.pin("VDDC").min(0.0 A).max(1.0 A);
-	    dps_meas.pin("VDDQBT").min(0.0 A).max(1.0 A);
-	    dps_meas.pin("VDDQ").min(0.0 A).max(1.0 A);
-	    dps_meas.pin("AVDDLV33").min(0.0 A).max(1.0 A);
-	    dps_meas.pin("AVDDSDT").min(0.0 A).max(1.0 A);
-	    dps_meas.pin("AVDDDAC").min(0.0 A).max(0.01 A);
-	    dps_meas.pin("VDDQICIO").min(0.0 A).max(1.0 A);
+	    dps_meas.pin("VDDQDDR").min(0.0 A).max(0.1 A);
+	    dps_meas.pin("VDDC").min(0.0 A).max(0.1 A);
+	    dps_meas.pin("VDDQBT").min(0.0 A).max(0.1 A);
+	    dps_meas.pin("VDDQ").min(0.0 A).max(0.1 A);
+	    dps_meas.pin("AVDDLV33").min(0.0 A).max(0.1 A);
+	    dps_meas.pin("AVDDSDT").min(0.0 A).max(0.1 A);
+	    dps_meas.pin("AVDDDAC").min(0.0 A).max(0.1 A);
+	    dps_meas.pin("VDDQICIO").min(0.0 A).max(0.1 A);
 
 	    dps_meas.trigMode(TM::INTERNAL);
 	    dps_meas.samples(1000);
         //ac_relay.pin("@").set("AC","OFF"); ac_relay.execute();
         //ac_relay.pin("CO0,CO1,CO2,CO3,CO4,CO5,CO6,CO7,CO8,CO9,YO0,YO1,YO2,YO3,YO4,YO5,YO6,YO7,YO8,YO9").set("IDLE","OFF");ac_relay.execute();
 
-	    START_TEST(); // flush then vector end
-	    //EXECUTE_TEST(); // flush then vector waiting test done.
+	    //START_TEST(); // flush then vector end
+	    EXECUTE_TEST(); // flush then vector waiting test done.
 	    WAIT_TIME(mWait_time ms);
 
 	    dps_meas.execute();
 
-	    Sequencer.abort();
+	    //Sequencer.abort();
 	    FLUSH();
 
 	    ON_FIRST_INVOCATION_END();
@@ -94,23 +94,23 @@ protected:
 	    iVDDQICIO   = dps_meas.getValue("VDDQICIO");
 
 	    site_num = CURRENT_SITE_NUMBER();
-	    if(mdebug){cout<<"SITE:" << site_num << "@DIDD_VDDQDDR:"  <<iVDDQDDR*1.0e3<<"mA"<<endl;}
-	    if(mdebug){cout<<"SITE:" << site_num << "@DIDD_VDDC:       "  <<iVDDC*1.0e3<<"mA"<<endl;}
-	    if(mdebug){cout<<"SITE:" << site_num << "@DIDD_VDDQBT:"      <<iVDDQBT*1.0e3<<"mA"<<endl;}
-	    if(mdebug){cout<<"SITE:" << site_num << "@DIDD_VDDQ:"         <<iVDDQ*1.0e3<<"mA"<<endl;}
-	    if(mdebug){cout<<"SITE:" << site_num << "@DIDD_AVDDLV33:"    <<iAVDDLV33*1.0e3<<"mA"<<endl;}
-	    if(mdebug){cout<<"SITE:" << site_num << "@DIDD_AVDDSDT:"   <<iAVDDSDT*1.0e3<<"mA"<<endl;}
-	    if(mdebug){cout<<"SITE:" << site_num << "@DIDD_AVDDDAC:"     <<iAVDDDAC*1.0e3<<"mA"<<endl;}
-	    if(mdebug){cout<<"SITE:" << site_num << "@DIDD_VDDQICIO:"   <<iVDDQICIO*1.0e3<<"mA"<<endl;}
+	    if(mdebug){cout<<"SITE:" << site_num << "@SIDD_VDDQDDR:"  <<iVDDQDDR*1.0e6<<"uA"<<endl;}
+	    if(mdebug){cout<<"SITE:" << site_num << "@SIDD_VDDC:       "  <<iVDDC*1.0e6<<"uA"<<endl;}
+	    if(mdebug){cout<<"SITE:" << site_num << "@SIDD_VDDQBT:"      <<iVDDQBT*1.0e6<<"uA"<<endl;}
+	    if(mdebug){cout<<"SITE:" << site_num << "@SIDD_VDDQ:"         <<iVDDQ*1.0e6<<"uA"<<endl;}
+	    if(mdebug){cout<<"SITE:" << site_num << "@SIDD_AVDDLV33:"    <<iAVDDLV33*1.0e6<<"uA"<<endl;}
+	    if(mdebug){cout<<"SITE:" << site_num << "@SIDD_AVDDSDT:"   <<iAVDDSDT*1.0e6<<"uA"<<endl;}
+	    if(mdebug){cout<<"SITE:" << site_num << "@SIDD_AVDDDAC:"     <<iAVDDDAC*1.0e6<<"uA"<<endl;}
+	    if(mdebug){cout<<"SITE:" << site_num << "@SIDD_VDDQICIO:"   <<iVDDQICIO*1.0e6<<"uA"<<endl;}
 
-	    TEST("DIDD_VDDQDDR",   "DIDD_VDDQDDR", LIMIT(TM::GT,   5.0 MA, TM::LT,   40.0 MA),   iVDDQDDR,   TM::CONTINUE);
-	    TEST("DIDD_VDDC",          "DIDD_VDDC",        LIMIT(TM::GT,  5.0 MA, TM::LT,  80.0 MA),   iVDDC,          TM::CONTINUE);
-	    TEST("DIDD_VDDQBT",       "DIDD_VDDQBT",     LIMIT(TM::GT,   5.0 MA, TM::LT,   40.0 MA),   iVDDQBT,       TM::CONTINUE);
-	    TEST("DIDD_VDDQ",          "DIDD_VDDQ",        LIMIT(TM::GT,  5.0 MA, TM::LT,   30.0 MA),   iVDDQ,          TM::CONTINUE);
-	    TEST("DIDD_AVDDLV33",     "DIDD_AVDDLV33",   LIMIT(TM::GT,   5.0 MA, TM::LT,   50.0 MA),   iAVDDLV33,     TM::CONTINUE);
-	    TEST("DIDD_AVDDSDT",    "DIDD_AVDDSDT",  LIMIT(TM::GT,  5.0 MA, TM::LT,    40.0 MA),   iAVDDSDT,    TM::CONTINUE);
-	    TEST("DIDD_AVDDDAC",      "DIDD_AVDDDAC",    LIMIT(TM::GT,   0.0 MA, TM::LT,   5.0 MA),   iAVDDDAC,      TM::CONTINUE);
-	    TEST("DIDD_VDDQICIO",    "DIDD_VDDQICIO",  LIMIT(TM::GT,     0.1 MA, TM::LT,   5.0 MA),   iVDDQICIO,    TM::CONTINUE);
+	    TEST("SIDD_VDDQDDR",   "SIDD_VDDQDDR", LIMIT(TM::GT,   -10.0 UA, TM::LT,   20000.0 UA),   iVDDQDDR,   TM::CONTINUE);
+	    TEST("SIDD_VDDC",          "SIDD_VDDC",        LIMIT(TM::GT,  -10.0 UA, TM::LT,  2000.0 UA),   iVDDC,          TM::CONTINUE);
+	    TEST("SIDD_VDDQBT",       "SIDD_VDDQBT",     LIMIT(TM::GT,   -10.0 UA, TM::LT,   5000.0 UA),   iVDDQBT,       TM::CONTINUE);
+	    TEST("SIDD_VDDQ",          "SIDD_VDDQ",        LIMIT(TM::GT,  -10.0 UA, TM::LT,   3000.0 UA),   iVDDQ,          TM::CONTINUE);
+	    TEST("SIDD_AVDDLV33",     "SIDD_AVDDLV33",   LIMIT(TM::GT,   -10.0 UA, TM::LT,   30000.0 UA),   iAVDDLV33,     TM::CONTINUE);
+	    TEST("SIDD_AVDDSDT",    "SIDD_AVDDSDT",  LIMIT(TM::GT,  -10.0 UA, TM::LT,    30000.0 UA),   iAVDDSDT,    TM::CONTINUE);
+	    TEST("SIDD_AVDDDAC",      "SIDD_AVDDDAC",    LIMIT(TM::GT,   -10.0 UA, TM::LT,   1000.0 UA),   iAVDDDAC,      TM::CONTINUE);
+	    TEST("SIDD_VDDQICIO",    "SIDD_VDDQICIO",  LIMIT(TM::GT,     -10.0 UA, TM::LT,   4000.0 UA),   iVDDQICIO,    TM::CONTINUE);
 
 
 	    return;
@@ -136,4 +136,4 @@ protected:
     return comment;
   }
 };
-REGISTER_TESTMETHOD("DIDD", DIDD);
+REGISTER_TESTMETHOD("UHD_SIDD", UHD_SIDD);

@@ -114,14 +114,9 @@ protected:
 
 		task1.execute();
 
-		// Result upload and Datalog
-		iMUX0OUTA = ppmuMeasure.getValue("MUX0OUTA");
-		iMUX1OUTA = ppmuMeasure.getValue("MUX1OUTA");
 
-		//cout<<"sequencer status :" << Sequencer.getSequencerStatus() <<endl;
-		cout<<"VIL MUX0 value  : " << iMUX0OUTA <<endl;
-		cout<<"VIL MUX1 value  : " << iMUX1OUTA <<endl;
 		Sequencer.reset();
+		FLUSH();
 
 		//FOR_EACH_SITE_END();
 
@@ -131,17 +126,25 @@ protected:
 
 		ON_FIRST_INVOCATION_END();
 
+		// Result upload and Datalog
+		iMUX0OUTA = ppmuMeasure.getValue("MUX0OUTA");
+		iMUX1OUTA = ppmuMeasure.getValue("MUX1OUTA");
+
+		//cout<<"sequencer status :" << Sequencer.getSequencerStatus() <<endl;
+		cout<<"VIL MUX0 value  : " << iMUX0OUTA <<endl;
+		cout<<"VIL MUX1 value  : " << iMUX1OUTA <<endl;
+
 
 		site_num = CURRENT_SITE_NUMBER();
 		///////////////////////////////////////////
-		printf("SENPINS INPUT LEVEL : 200mV \n");
-		printf("MUX0OUTA current  SPI : %.10f \n",iMUX0OUTA);
+		printf("SITE %d SENPINS INPUT LEVEL : 200mV \n",site_num);
+		printf("SITE %d MUX0OUTA current  SPI : %.10f \n",site_num,iMUX0OUTA);
 
 		TEST("SPI_CURRENT_MUX0OUTA", "SPI_CURRENT_MUX0OUTA", LIMIT(TM::GT, -4.5 MA ,
 				TM::LT, -2.2 MA ), iMUX0OUTA, TM::CONTINUE);
 
-		printf("SENPINS INPUT LEVEL : 200mV \n");
-		printf("MUX1OUTA current  SPI : %.10f \n",iMUX0OUTA);
+		printf("SITE %d SENPINS INPUT LEVEL : 200mV \n",site_num);
+		printf("SITE %d MUX1OUTA current  SPI : %.10f \n",site_num,iMUX0OUTA);
 
 		TEST("SPI_CURRENT_MUX1OUTA", "SPI_CURRENT_MUX1OUTA", LIMIT(TM::GT, -4.5 MA ,
 				TM::LT, -2.2 MA ), iMUX1OUTA, TM::CONTINUE);

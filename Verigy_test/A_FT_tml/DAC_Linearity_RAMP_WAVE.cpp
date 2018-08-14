@@ -50,7 +50,7 @@ protected:
 		double inl, dnl;
 		int curr_site;
 		int ramp_samples = 1024;
-		int ramp_av = 5;
+		int ramp_av = 10;
 		//int ramp_wf_st_addr = 16-1; //repeat 16times - 1
 		tout = 5.0;
 		static INT tout_site_flag, mis_trg_site;
@@ -164,9 +164,9 @@ protected:
 
 		TEST("TRIGGER", "TRIGGER", LIMIT(TM::GE, 0.0, TM::LE, 0.0),
 				TRIG_FLAG[CURRENT_SITE_NUMBER() - 1], TM::CONTINUE);
-		TEST("DGT_pin", "DAC_DLE", LIMIT(TM::GE, -3.0, TM::LE, 3.0),
+		TEST("DGT_pin", "DAC_DLE", LIMIT(TM::GE, -4.0, TM::LE, 4.0),
 				linear_result.damax, TM::CONTINUE);
-		TEST("DGT_pin", "DAC_ILE", LIMIT(TM::GE, -3.0, TM::LE, 3.0),
+		TEST("DGT_pin", "DAC_ILE", LIMIT(TM::GE, -4.0, TM::LE, 4.0),
 				linear_result.iamax, TM::CONTINUE);
 
 		return;

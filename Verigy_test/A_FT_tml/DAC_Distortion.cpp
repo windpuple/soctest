@@ -98,19 +98,9 @@ protected:
 				EXECUTE_TEST();
 				WAIT_TEST_DONE(tout);
 
-				//relay.util("CVBS_K4,COMP_K6,REXTD_K5").off();
-				//relay.wait(1.5 ms );
-				//relay.execute();
-
-				// this is trigger debug sequence
-				//FW_ResultData data;
-				//FW_TASK("ACMD? \"TRIN\",,(DAC_MEAS)\n",data);
-				//cout<<"TRIG="<<data.Answer<<endl; //FW_PASSED=ACMD "TRIN","NO",(DAC_MEAS);
-				//string noTrig = data.Answer;
-				//int Trig_Find = noTrig.find("NO",1);
-				//cout<<"Trig_Find="<<Trig_Find<<endl;
-				//if(Trig_Find==13){NOTRIG_FLAG = 0.0;cout<<"TRIGGER FAIL"<<endl;} //Trig_Find=13
-				//else{NOTRIG_FLAG = 1.0;cout<<"TRIGGER PASS"<<endl;}
+				relay.util("CVBS_K4,COMP_K6,REXTD_K5").off();
+				relay.wait(1.5 ms );
+				relay.execute();
 
 				WAIT_TEST_DONE(tout, &tout_site_flag, &mis_trg_site);
 				//triggers (0) in a test or not (1) and returns the status to mis_trg_site variable.
@@ -189,13 +179,12 @@ protected:
 					<< thd_result.snd << "dB" << endl;
 		}
 
-		TEST("NOTRIG_FLAG", "NOTRIG_FLAG", LIMIT(TM::GE, 1.0, TM::LE, 1.0),
-				NOTRIG_FLAG, TM::CONTINUE);
-		TEST(DGT_pin, "DAC_SNR", LIMIT(TM::GE, 40.0, TM::LE, 60.0),
+
+		TEST(DGT_pin, "DAC_SNR", LIMIT(TM::GE, 38.0, TM::LE, 60.0),
 				thd_result.snr, TM::CONTINUE);
-		TEST(DGT_pin, "DAC_THD", LIMIT(TM::GE, -65.0, TM::LE, -40.0),
+		TEST(DGT_pin, "DAC_THD", LIMIT(TM::GE, -65.0, TM::LE, -38.0),
 				thd_result.thd, TM::CONTINUE);
-		TEST(DGT_pin, "DAC_SNDR", LIMIT(TM::GE, 40.0, TM::LE, 60.0),
+		TEST(DGT_pin, "DAC_SNDR", LIMIT(TM::GE, 38.0, TM::LE, 60.0),
 				thd_result.snd, TM::CONTINUE);
 
 		DISCONNECT();

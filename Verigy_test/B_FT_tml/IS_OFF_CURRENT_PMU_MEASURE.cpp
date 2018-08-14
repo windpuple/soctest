@@ -14,6 +14,7 @@ using namespace std;
 class IS_OFF_CURRENT_PMU_MEASURE: public testmethod::TestMethod {
 protected:
 	double mWait_time;
+	double SEN_LEVEL;
 	int mdebug;
 protected:
 	/**
@@ -26,6 +27,9 @@ protected:
 		addParameter("wait_time", "double", &mWait_time,
 				testmethod::TM_PARAMETER_INPUT) .setComment(
 				"wait for measurement");
+		addParameter("SEN_LEVEL", "double", &SEN_LEVEL,
+				testmethod::TM_PARAMETER_INPUT) .setComment(
+				"SENSOR INPUT LEVEL");
 		addParameter("debug", "int", &mdebug, testmethod::TM_PARAMETER_INPUT);
 	}
 
@@ -93,7 +97,7 @@ protected:
 
 		Primary.level(spec1);
 
-		Primary.getLevelSpec().change("SEN_LEVEL", 3.3);
+		Primary.getLevelSpec().change("SEN_LEVEL", SEN_LEVEL);
 
 		FLUSH();
 
@@ -107,6 +111,7 @@ protected:
 		task1.execute();
 
 		Sequencer.abort();
+		FLUSH();
 
 	    ac_relay.pin("@").set("AC","OFF");
 	    ac_relay.wait(1.5 ms);
@@ -118,8 +123,8 @@ protected:
 		iMUX0OUTA = ppmuMeasure.getValue("MUX0OUTA");
 		iMUX1OUTA = ppmuMeasure.getValue("MUX1OUTA");
 
-		cout<<"IS OFF MUX0OUTA value  : " << iMUX0OUTA <<endl;
-		cout<<"IS OFF MUX1OUTA value  : " << iMUX1OUTA <<endl;
+		cout << "site " << CURRENT_SITE_NUMBER() <<" IS OFF MUX0OUTA value  : " << iMUX0OUTA <<endl;
+		cout << "site " << CURRENT_SITE_NUMBER() <<" IS OFF MUX1OUTA value  : " << iMUX1OUTA <<endl;
 
 		TEST("VOLTAGE_MUX0OUTA", "VOLTAGE_MUX0OUTA", LIMIT(TM::GT, -1.0 uA ,
 						TM::LT, 0.0 uA ), iMUX0OUTA, TM::CONTINUE);

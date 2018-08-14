@@ -124,22 +124,32 @@ protected:
 
 		for(int i = 1; i < 98; i++) {
 
+			iMUX0OUTA_50MV[i-1] = 0.0;
+			iMUX1OUTA_50MV[i-1] = 0.0;
+
 		Sequencer.stopCycle(i).run();
 
 		WAIT_TIME(mWait_time ms);
 
 		task1.execute();
 
-		// Result upload and Datalog
-		iMUX0OUTA_50MV[i-1] = ppmuMeasure.getValue("MUX0OUTA");
-		iMUX1OUTA_50MV[i-1] = ppmuMeasure.getValue("MUX1OUTA");
 
 		//cout<<"sequencer status :" << Sequencer.getSequencerStatus() <<endl;
 		//cout<<"50mv MUX0 value " << i-1 << " : " << iMUX0OUTA_50MV[i-1] <<endl;
 		//cout<<"50mv MUX1 value " << i-1 << " : " << iMUX1OUTA_50MV[i-1] <<endl;
 		Sequencer.reset();
-
+		FLUSH();
 		}
+
+		ON_FIRST_INVOCATION_END();
+
+		for(int i = 1; i < 98; i++) {
+		// Result upload and Datalog
+		iMUX0OUTA_50MV[i-1] = ppmuMeasure.getValue("MUX0OUTA");
+		iMUX1OUTA_50MV[i-1] = ppmuMeasure.getValue("MUX1OUTA");
+		}
+
+		ON_FIRST_INVOCATION_BEGIN();
 
 		////////////////////////////////////////////////////////////
 		Primary.getLevelSpec().change("SEN_LEVEL", 0.1);
@@ -148,22 +158,32 @@ protected:
 
 		for(int i = 1; i < 98; i++) {
 
+			iMUX0OUTA_100MV[i-1] = 0.0;
+			iMUX1OUTA_100MV[i-1] = 0.0;
+
 		Sequencer.stopCycle(i).run();
 
 		WAIT_TIME(mWait_time ms);
 
 		task1.execute();
 
-		// Result upload and Datalog
-		iMUX0OUTA_100MV[i-1] = ppmuMeasure.getValue("MUX0OUTA");
-		iMUX1OUTA_100MV[i-1] = ppmuMeasure.getValue("MUX1OUTA");
 
 		//cout<<"sequencer status :" << Sequencer.getSequencerStatus() <<endl;
 		//cout<<"100mv MUX0 value " << i-1 << " : " << iMUX0OUTA_100MV[i-1] <<endl;
 		//cout<<"100mv MUX1 value " << i-1 << " : " << iMUX1OUTA_100MV[i-1] <<endl;
 		Sequencer.reset();
-
+		FLUSH();
 		}
+
+		ON_FIRST_INVOCATION_END();
+
+		for(int i = 1; i < 98; i++) {
+		// Result upload and Datalog
+			iMUX0OUTA_100MV[i-1] = ppmuMeasure.getValue("MUX0OUTA");
+			iMUX1OUTA_100MV[i-1] = ppmuMeasure.getValue("MUX1OUTA");
+		}
+
+			ON_FIRST_INVOCATION_BEGIN();
 
 		////////////////////////////////////////////////////////////
 		Primary.getLevelSpec().change("SEN_LEVEL", 0.2);
@@ -172,31 +192,38 @@ protected:
 
 		for(int i = 1; i < 98; i++) {
 
+		iMUX0OUTA_S200MV[i-1] = 0.0;
+		iMUX1OUTA_S200MV[i-1] = 0.0;
+
 		Sequencer.stopCycle(i).run();
 
 		WAIT_TIME(mWait_time ms);
 
 		task1.execute();
 
-		// Result upload and Datalog
-		iMUX0OUTA_S200MV[i-1] = ppmuMeasure.getValue("MUX0OUTA");
-		iMUX1OUTA_S200MV[i-1] = ppmuMeasure.getValue("MUX1OUTA");
+
 
 		//cout<<"sequencer status :" << Sequencer.getSequencerStatus() <<endl;
 		//cout<<"S200mv MUX0 value " << i-1 << " : " << iMUX0OUTA_S200MV[i-1] <<endl;
 		//cout<<"S200mv MUX1 value " << i-1 << " : " << iMUX1OUTA_S200MV[i-1] <<endl;
 		Sequencer.reset();
-
+		FLUSH();
 		}
 
+		ON_FIRST_INVOCATION_END();
 
+		for(int i = 1; i < 98; i++) {
+		// Result upload and Datalog
+		iMUX0OUTA_S200MV[i-1] = ppmuMeasure.getValue("MUX0OUTA");
+		iMUX1OUTA_S200MV[i-1] = ppmuMeasure.getValue("MUX1OUTA");
+		}
 		//FOR_EACH_SITE_END();
 
 	    ac_relay.pin("@").set("AC","OFF");
 	    ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
 
-		ON_FIRST_INVOCATION_END();
+		//ON_FIRST_INVOCATION_END();
 
 
 
@@ -215,7 +242,7 @@ protected:
 
 
 		//////////////////////////////////////////
-		printf("SENPINS INPUT LEVEL : 50mV \n");
+		printf("site %d SENPINS INPUT LEVEL : 50mV \n",CURRENT_SITE_NUMBER());
 		printf("MUX0OUTA current ADDRESS %2X : %lf \n",i,iMUX0OUTA_50MV[i] );
 
 		TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -1.2  MA,
@@ -228,7 +255,7 @@ protected:
 
 
 		/////////////////////////////////////////
-		printf("SENPINS INPUT LEVEL : 100mV \n");
+		printf("site %d SENPINS INPUT LEVEL : 100mV \n",CURRENT_SITE_NUMBER());
 		printf("MUX0OUTA current ADDRESS %2X : %lf \n",i,iMUX0OUTA_100MV[i]);
 
 		TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -2.4 MA ,
@@ -240,7 +267,7 @@ protected:
 				TM::LT, -1.18 MA ), iMUX1OUTA_100MV[i], TM::CONTINUE);
 
 		////////////////////////////////////////
-		printf("SENPINS INPUT LEVEL : 200mV \n");
+		printf("site %d SENPINS INPUT LEVEL : 200mV \n",CURRENT_SITE_NUMBER());
 		printf("MUX0OUTA current ADDRESS %2X : %lf \n",i,iMUX0OUTA_S200MV[i]);
 
 		TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -4.5 MA ,

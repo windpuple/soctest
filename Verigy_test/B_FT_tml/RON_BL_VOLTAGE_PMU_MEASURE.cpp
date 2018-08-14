@@ -100,6 +100,7 @@ protected:
 		task1.execute();
 
 		Sequencer.abort();
+		FLUSH();
 
 	    ac_relay.pin("@").set("AC","OFF");
 	    ac_relay.wait(1.5 ms);
@@ -111,8 +112,8 @@ protected:
 		iBASELOOPA = ppmuMeasure.getValue("BASELOOPA");
 		iBASELOOPB = ppmuMeasure.getValue("BASELOOPB");
 
-		cout<<"BASELOOPA value  : " << iBASELOOPA <<endl;
-		cout<<"BASELOOPB value  : " << iBASELOOPB <<endl;
+		cout << "site " << CURRENT_SITE_NUMBER() <<" BASELOOPA value  : " << iBASELOOPA <<endl;
+		cout << "site " << CURRENT_SITE_NUMBER() <<" BASELOOPB value  : " << iBASELOOPB <<endl;
 
 		TEST("VOLTAGE_BASELOOPA", "VOLTAGE_BASELOOPA", LIMIT(TM::GT, 0.05 V ,
 						TM::LT, 0.45 V ), iBASELOOPA, TM::CONTINUE);

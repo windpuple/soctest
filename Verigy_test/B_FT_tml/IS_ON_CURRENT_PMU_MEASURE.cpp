@@ -115,9 +115,7 @@ protected:
 
 		task1.execute();
 
-		// Result upload and Datalog
-		iMUX0OUTA[i-1] = ppmuMeasure.getValue("MUX0OUTA");
-		iMUX1OUTA[i-1] = ppmuMeasure.getValue("MUX1OUTA");
+
 
 		//printf("getValue : %lf\n", ppmuMeasure.getValue("MUX0OUTA"));
 
@@ -128,8 +126,17 @@ protected:
 
 		}
 
+		ON_FIRST_INVOCATION_END();
+
+		for(int i = 1; i < 98; i++) {
+		// Result upload and Datalog
+		iMUX0OUTA[i-1] = ppmuMeasure.getValue("MUX0OUTA");
+		iMUX1OUTA[i-1] = ppmuMeasure.getValue("MUX1OUTA");
+		}
 
 		//FOR_EACH_SITE_END();
+
+		ON_FIRST_INVOCATION_BEGIN();
 
 	    ac_relay.pin("@").set("AC","OFF");
 	    ac_relay.wait(1.5 ms);
@@ -142,12 +149,12 @@ protected:
 
 		site_num = CURRENT_SITE_NUMBER();
 		///////////////////////////////////////////
-		printf("IS ON MUX0OUTA current ADDRESS %2X : %.9f \n",i-1,iMUX0OUTA[i-1]);
+		printf("site %d IS ON MUX0OUTA current ADDRESS %2X : %.9f \n",CURRENT_SITE_NUMBER(),i-1,iMUX0OUTA[i-1]);
 
 		TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -1.0 uA ,
 				TM::LT, 1.0 uA ), iMUX0OUTA[i-1], TM::CONTINUE);
 
-		printf("IS ON MUX1OUTA current ADDRESS %2X : %.9f \n",i-1,iMUX1OUTA[i-1]);
+		printf("site %d IS ON MUX1OUTA current ADDRESS %2X : %.9f \n",CURRENT_SITE_NUMBER(),i-1,iMUX1OUTA[i-1]);
 
 		TEST("CURRENT_MUX1OUTA", "CURRENT_MUX1OUTA", LIMIT(TM::GT, -1.0 uA ,
 				TM::LT, 1.0 uA ), iMUX1OUTA[i-1], TM::CONTINUE);

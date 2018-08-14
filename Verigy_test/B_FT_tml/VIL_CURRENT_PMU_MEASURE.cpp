@@ -54,6 +54,10 @@ protected:
 
 		ON_FIRST_INVOCATION_BEGIN();
 
+		DISCONNECT();
+		CONNECT();
+
+
 	    ac_relay.pin("@").set("IDLE","OFF");
 	    ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
@@ -114,9 +118,7 @@ protected:
 
 		task1.execute();
 
-		// Result upload and Datalog
-		iMUX0OUTA = ppmuMeasure.getValue("MUX0OUTA");
-		iMUX1OUTA = ppmuMeasure.getValue("MUX1OUTA");
+
 
 		//cout<<"sequencer status :" << Sequencer.getSequencerStatus() <<endl;
 		cout<<"VIL MUX0 value  : " << iMUX0OUTA <<endl;
@@ -131,6 +133,9 @@ protected:
 
 		ON_FIRST_INVOCATION_END();
 
+		// Result upload and Datalog
+		iMUX0OUTA = ppmuMeasure.getValue("MUX0OUTA");
+		iMUX1OUTA = ppmuMeasure.getValue("MUX1OUTA");
 
 		site_num = CURRENT_SITE_NUMBER();
 		///////////////////////////////////////////
