@@ -52,6 +52,8 @@ protected:
 		PPMU_CLAMP clamp_on, clamp_off;
 		TASK_LIST task1;
 
+
+
 		ON_FIRST_INVOCATION_BEGIN();
 		DISCONNECT();
 		CONNECT();
@@ -63,6 +65,7 @@ protected:
         ac_relay.pin("SENADDR0,SENADDR1,SENADDR2,SENADDR3,SENADDR4,SENADDR5,SENADDR6,COMMMODE, BLEN, INPUTMODE, MUXEN, OSCON, MUX0OUTA, MUX1OUTA").set("AC","OFF");
         ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
+
 
 
 		// Setups for PPMU
@@ -103,7 +106,12 @@ protected:
 
 		Primary.level(spec1);
 
+
+		ON_FIRST_INVOCATION_END();
+
 		for(int i = 1; i < 98; i++) {
+
+		ON_FIRST_INVOCATION_BEGIN();
 
 		Primary.getLevelSpec().change("SEN_LEVEL", 0.2);
 
@@ -115,37 +123,21 @@ protected:
 
 		task1.execute();
 
-
-
 		//printf("getValue : %lf\n", ppmuMeasure.getValue("MUX0OUTA"));
 
 		//cout<<"sequencer status :" << Sequencer.getSequencerStatus() <<endl;
 		//cout<<"IS ON MUX0 value " << i-1 << " : " << iMUX0OUTA[i-1] <<endl;
 		//cout<<"IS ON MUX1 value " << i-1 << " : " << iMUX1OUTA[i-1] <<endl;
 		Sequencer.reset();
-
-		}
-
-		ON_FIRST_INVOCATION_END();
-
-		for(int i = 1; i < 98; i++) {
-		// Result upload and Datalog
-		iMUX0OUTA[i-1] = ppmuMeasure.getValue("MUX0OUTA");
-		iMUX1OUTA[i-1] = ppmuMeasure.getValue("MUX1OUTA");
-		}
-
-		//FOR_EACH_SITE_END();
-
-		ON_FIRST_INVOCATION_BEGIN();
-
-	    ac_relay.pin("@").set("AC","OFF");
-	    ac_relay.wait(1.5 ms);
-	    ac_relay.execute();
-
-		ON_FIRST_INVOCATION_END();
+		FLUSH();
 
 
-		for(int i = 1; i < 98; i++) {
+
+	    ON_FIRST_INVOCATION_END();
+
+	    iMUX0OUTA[i-1] = ppmuMeasure.getValue("MUX0OUTA");
+	    iMUX1OUTA[i-1] = ppmuMeasure.getValue("MUX1OUTA");
+
 
 		site_num = CURRENT_SITE_NUMBER();
 		///////////////////////////////////////////
@@ -161,8 +153,12 @@ protected:
 
 		}
 
+		ON_FIRST_INVOCATION_BEGIN();
+		ac_relay.pin("@").set("AC","OFF");
+	    ac_relay.wait(1.5 ms);
+	    ac_relay.execute();
 
-
+	    ON_FIRST_INVOCATION_END();
 
 		return;
 	}

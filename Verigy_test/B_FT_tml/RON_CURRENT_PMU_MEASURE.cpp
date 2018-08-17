@@ -63,6 +63,9 @@ protected:
 		PPMU_CLAMP clamp_on, clamp_off;
 		TASK_LIST task1;
 
+
+
+
 		ON_FIRST_INVOCATION_BEGIN();
 
 		DISCONNECT();
@@ -76,6 +79,7 @@ protected:
         ac_relay.pin("SENGRP").set("AC","OFF");
 	    ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
+
 
 
 		// Setups for PPMU
@@ -109,6 +113,11 @@ protected:
 		// ON invocation block dont execute number of site. so when u make each site measured data bind some data value, u must
 		// USE EACH_SITE_BEGIN API
 
+		ON_FIRST_INVOCATION_END();
+
+		for(int i = 1; i < 98; i++) {
+
+		ON_FIRST_INVOCATION_BEGIN();
 
 		//FOR_EACH_SITE_BEGIN();
 
@@ -122,12 +131,17 @@ protected:
 
 		FLUSH();
 
-		for(int i = 1; i < 98; i++) {
+
+
+
+
 
 			iMUX0OUTA_50MV[i-1] = 0.0;
 			iMUX1OUTA_50MV[i-1] = 0.0;
 
+
 		Sequencer.stopCycle(i).run();
+
 
 		WAIT_TIME(mWait_time ms);
 
@@ -139,29 +153,35 @@ protected:
 		//cout<<"50mv MUX1 value " << i-1 << " : " << iMUX1OUTA_50MV[i-1] <<endl;
 		Sequencer.reset();
 		FLUSH();
-		}
+
+
+
+
 
 		ON_FIRST_INVOCATION_END();
 
-		for(int i = 1; i < 98; i++) {
-		// Result upload and Datalog
 		iMUX0OUTA_50MV[i-1] = ppmuMeasure.getValue("MUX0OUTA");
 		iMUX1OUTA_50MV[i-1] = ppmuMeasure.getValue("MUX1OUTA");
-		}
+
 
 		ON_FIRST_INVOCATION_BEGIN();
-
 		////////////////////////////////////////////////////////////
 		Primary.getLevelSpec().change("SEN_LEVEL", 0.1);
 
 		FLUSH();
 
-		for(int i = 1; i < 98; i++) {
+
+
+
+
+
 
 			iMUX0OUTA_100MV[i-1] = 0.0;
 			iMUX1OUTA_100MV[i-1] = 0.0;
 
+
 		Sequencer.stopCycle(i).run();
+
 
 		WAIT_TIME(mWait_time ms);
 
@@ -173,29 +193,33 @@ protected:
 		//cout<<"100mv MUX1 value " << i-1 << " : " << iMUX1OUTA_100MV[i-1] <<endl;
 		Sequencer.reset();
 		FLUSH();
-		}
+
+
 
 		ON_FIRST_INVOCATION_END();
 
-		for(int i = 1; i < 98; i++) {
-		// Result upload and Datalog
-			iMUX0OUTA_100MV[i-1] = ppmuMeasure.getValue("MUX0OUTA");
-			iMUX1OUTA_100MV[i-1] = ppmuMeasure.getValue("MUX1OUTA");
-		}
+		iMUX0OUTA_100MV[i-1] = ppmuMeasure.getValue("MUX0OUTA");
+		iMUX1OUTA_100MV[i-1] = ppmuMeasure.getValue("MUX1OUTA");
 
-			ON_FIRST_INVOCATION_BEGIN();
 
+		ON_FIRST_INVOCATION_BEGIN();
 		////////////////////////////////////////////////////////////
 		Primary.getLevelSpec().change("SEN_LEVEL", 0.2);
 
 		FLUSH();
 
-		for(int i = 1; i < 98; i++) {
+
+
+
+
+
 
 		iMUX0OUTA_S200MV[i-1] = 0.0;
 		iMUX1OUTA_S200MV[i-1] = 0.0;
 
+
 		Sequencer.stopCycle(i).run();
+
 
 		WAIT_TIME(mWait_time ms);
 
@@ -208,81 +232,75 @@ protected:
 		//cout<<"S200mv MUX1 value " << i-1 << " : " << iMUX1OUTA_S200MV[i-1] <<endl;
 		Sequencer.reset();
 		FLUSH();
-		}
 
-		ON_FIRST_INVOCATION_END();
 
-		for(int i = 1; i < 98; i++) {
-		// Result upload and Datalog
+
+
+
+
+
+
+
+
+	    ON_FIRST_INVOCATION_END();
+
+
+
 		iMUX0OUTA_S200MV[i-1] = ppmuMeasure.getValue("MUX0OUTA");
 		iMUX1OUTA_S200MV[i-1] = ppmuMeasure.getValue("MUX1OUTA");
-		}
-		//FOR_EACH_SITE_END();
+
+
+
+
+		site_num = CURRENT_SITE_NUMBER();
+
+
+		//////////////////////////////////////////
+		printf("site %d SENPINS INPUT LEVEL : 50mV \n",CURRENT_SITE_NUMBER());
+		printf("MUX0OUTA current ADDRESS %2X : %.9f \n",i-1,iMUX0OUTA_50MV[i-1] );
+
+		TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -1.2  MA,
+				TM::LT, -0.59  MA), iMUX0OUTA_50MV[i-1], TM::CONTINUE);
+
+		printf("MUX1OUTA current ADDRESS %2X : %.9f \n",i-1,iMUX1OUTA_50MV[i-1] );
+
+		TEST("CURRENT_MUX1OUTA", "CURRENT_MUX1OUTA", LIMIT(TM::GT, -1.2  MA,
+				TM::LT, -0.59 MA), iMUX1OUTA_50MV[i-1] , TM::CONTINUE);
+
+
+		/////////////////////////////////////////
+		printf("site %d SENPINS INPUT LEVEL : 100mV \n",CURRENT_SITE_NUMBER());
+		printf("MUX0OUTA current ADDRESS %2X : %.9f \n",i-1,iMUX0OUTA_100MV[i-1]);
+
+		TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -2.4 MA ,
+				TM::LT, -1.18 MA ), iMUX0OUTA_100MV[i-1], TM::CONTINUE);
+
+		printf("MUX1OUTA current ADDRESS %2X : %.9f \n",i-1,iMUX1OUTA_100MV[i-1]);
+
+		TEST("CURRENT_MUX1OUTA", "CURRENT_MUX1OUTA", LIMIT(TM::GT, -2.4 MA ,
+				TM::LT, -1.18 MA ), iMUX1OUTA_100MV[i-1], TM::CONTINUE);
+
+		////////////////////////////////////////
+		printf("site %d SENPINS INPUT LEVEL : 200mV \n",CURRENT_SITE_NUMBER());
+		printf("MUX0OUTA current ADDRESS %2X : %.9f \n",i-1,iMUX0OUTA_S200MV[i-1]);
+
+		TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -4.5 MA ,
+				TM::LT, -2.22 MA ), iMUX0OUTA_S200MV[i-1], TM::CONTINUE);
+
+		printf("MUX1OUTA current ADDRESS %2X : %.9f \n",i-1,iMUX1OUTA_S200MV[i-1]);
+
+		TEST("CURRENT_MUX1OUTA", "CURRENT_MUX1OUTA", LIMIT(TM::GT, -4.5 MA ,
+				TM::LT, -2.22 MA ), iMUX1OUTA_S200MV[i-1], TM::CONTINUE);
+
+	}
+
+		ON_FIRST_INVOCATION_BEGIN();
 
 	    ac_relay.pin("@").set("AC","OFF");
 	    ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
 
-		//ON_FIRST_INVOCATION_END();
-
-
-
-		for(int i = 0; i < 97; i++) {
-
-		//for(int i = 50; i < 90; i++) {
-
-		site_num = CURRENT_SITE_NUMBER();
-
-		//if(TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -1.2  MA,
-		//		TM::LT, -0.59  MA), iMUX0OUTA_50MV[i], TM::CONTINUE) == false) {
-
-		//	cout<< "FAIL POSITION i :" << i << "iMUX0OUTA_50MV[i] : " << iMUX0OUTA_50MV[i] << endl;
-
-		//}
-
-
-		//////////////////////////////////////////
-		printf("site %d SENPINS INPUT LEVEL : 50mV \n",CURRENT_SITE_NUMBER());
-		printf("MUX0OUTA current ADDRESS %2X : %lf \n",i,iMUX0OUTA_50MV[i] );
-
-		TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -1.2  MA,
-				TM::LT, -0.59  MA), iMUX0OUTA_50MV[i], TM::CONTINUE);
-
-		printf("MUX1OUTA current ADDRESS %2X : %lf \n",i,iMUX1OUTA_50MV[i] );
-
-		TEST("CURRENT_MUX1OUTA", "CURRENT_MUX1OUTA", LIMIT(TM::GT, -1.2  MA,
-				TM::LT, -0.59 MA), iMUX1OUTA_50MV[i] , TM::CONTINUE);
-
-
-		/////////////////////////////////////////
-		printf("site %d SENPINS INPUT LEVEL : 100mV \n",CURRENT_SITE_NUMBER());
-		printf("MUX0OUTA current ADDRESS %2X : %lf \n",i,iMUX0OUTA_100MV[i]);
-
-		TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -2.4 MA ,
-				TM::LT, -1.18 MA ), iMUX0OUTA_100MV[i], TM::CONTINUE);
-
-		printf("MUX1OUTA current ADDRESS %2X : %lf \n",i,iMUX1OUTA_100MV[i]);
-
-		TEST("CURRENT_MUX1OUTA", "CURRENT_MUX1OUTA", LIMIT(TM::GT, -2.4 MA ,
-				TM::LT, -1.18 MA ), iMUX1OUTA_100MV[i], TM::CONTINUE);
-
-		////////////////////////////////////////
-		printf("site %d SENPINS INPUT LEVEL : 200mV \n",CURRENT_SITE_NUMBER());
-		printf("MUX0OUTA current ADDRESS %2X : %lf \n",i,iMUX0OUTA_S200MV[i]);
-
-		TEST("CURRENT_MUX0OUTA", "CURRENT_MUX0OUTA", LIMIT(TM::GT, -4.5 MA ,
-				TM::LT, -2.22 MA ), iMUX0OUTA_S200MV[i], TM::CONTINUE);
-
-		printf("MUX1OUTA current ADDRESS %2X : %lf \n",i,iMUX1OUTA_S200MV[i]);
-
-		TEST("CURRENT_MUX1OUTA", "CURRENT_MUX1OUTA", LIMIT(TM::GT, -4.5 MA ,
-				TM::LT, -2.22 MA ), iMUX1OUTA_S200MV[i], TM::CONTINUE);
-
-
-
-		}
-
-
+	    ON_FIRST_INVOCATION_END();
 
 
 		return;
