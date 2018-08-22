@@ -83,14 +83,14 @@ protected:
 
 		//MeasurEment Setups
 
-		ppmuMeasure.pin("MUX0OUTA,MUX1OUTA").execMode(TM::PVAL).numberOfSamples(100);
+		ppmuMeasure.pin("MUX0OUTA,MUX1OUTA").execMode(TM::PVAL).numberOfSamples(1);
 
 		//Hardware Specific Programing to avoid Hot Switching on the Current Force setup
 
-		clamp_on.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_ON").low(0.0 V).high(4.0 V);
-		clamp_off.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_OFF");
+		//clamp_on.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_ON").low(0.0 V).high(4.0 V);
+		//clamp_off.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_OFF");
 
-		task1.add(setting).add(relay_on).add(ppmuMeasure).add(relay_off).add(clamp_on);
+		task1.add(setting).add(relay_on).add(ppmuMeasure).add(relay_off);
 
 		//Execute the Task list
 

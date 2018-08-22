@@ -46,13 +46,13 @@ protected:
 		DOUBLE iMUX0OUTA_F200MV[97], iMUX0OUTA_50MV[97], iMUX0OUTA_100MV[97], iMUX0OUTA_S200MV[97], iMUX0OUTA_33V[97];
 		DOUBLE iMUX1OUTA_F200MV[97], iMUX1OUTA_50MV[97], iMUX1OUTA_100MV[97], iMUX1OUTA_S200MV[97], iMUX1OUTA_33V[97];
 
-		for(int i = 0; i < 98; i++) {
+//		for(int i = 0; i < 98; i++) {
 
-			iMUX0OUTA_50MV[i] = 0.0;
-			iMUX0OUTA_100MV[i] = 0.0;
-			iMUX0OUTA_S200MV[i] = 0.0;
+//			iMUX0OUTA_50MV[i] = 0.0;
+//			iMUX0OUTA_100MV[i] = 0.0;
+//			iMUX0OUTA_S200MV[i] = 0.0;
 
-		}
+//		}
 
 
 		int site_num;
@@ -72,39 +72,39 @@ protected:
 		CONNECT();
 
 	    ac_relay.pin("@").set("IDLE","OFF");
-	    ac_relay.wait(1.5 ms);
+	    //ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
 
         ac_relay.pin("SENADDR0,SENADDR1,SENADDR2,SENADDR3,SENADDR4,SENADDR5,SENADDR6,COMMMODE, BLEN, INPUTMODE, MUXEN, OSCON, MUX0OUTA, MUX1OUTA").set("AC","OFF");
         ac_relay.pin("SENGRP").set("AC","OFF");
-	    ac_relay.wait(1.5 ms);
+	    //ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
 
 
 
 		// Setups for PPMU
 
-		setting.pin("MUX0OUTA,MUX1OUTA").iRange(40 mA).min(-5 mA).max(5 mA).vForce(0.0 V);
+		setting.pin("MUX0OUTA,MUX1OUTA").iRange(30 mA).min(-5 mA).max(5 mA).vForce(0.0 V);
 	    //setting.pin("MUX0OUTA").iRange(10 mA).min(-0.1 V).max(3.6 V).iForce(0.0 A );
 
 		//Relay Setups
 
 		relay_on.pin("MUX0OUTA,MUX1OUTA").status("PPMU_ON");
 
-		relay_on.wait(1.3 ms);
+		//relay_on.wait(1.3 ms);
 
 		relay_off.pin("MUX0OUTA,MUX1OUTA").status("AC_ON");
 
 		//MeasurEment Setups
 
-		ppmuMeasure.pin("MUX0OUTA,MUX1OUTA").execMode(TM::PVAL).numberOfSamples(100);
+		ppmuMeasure.pin("MUX0OUTA,MUX1OUTA").execMode(TM::PVAL).numberOfSamples(1);
 
 		//Hardware Specific Programing to avoid Hot Switching on the Current Force setup
 
-		clamp_on.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_ON").low(0.0 V).high(4.0 V);
-		clamp_off.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_OFF");
+		//clamp_on.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_ON").low(0.0 V).high(4.0 V);
+		//clamp_off.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_OFF");
 
-		task1.add(setting).add(relay_on).add(ppmuMeasure).add(relay_off).add(clamp_on);
+		task1.add(setting).add(relay_on).add(ppmuMeasure).add(relay_off);
 
 		//Execute the Task list
 
@@ -297,7 +297,7 @@ protected:
 		ON_FIRST_INVOCATION_BEGIN();
 
 	    ac_relay.pin("@").set("AC","OFF");
-	    ac_relay.wait(1.5 ms);
+	    //ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
 
 	    ON_FIRST_INVOCATION_END();

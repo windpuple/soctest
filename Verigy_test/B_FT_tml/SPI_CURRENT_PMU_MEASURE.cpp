@@ -55,12 +55,12 @@ protected:
 		ON_FIRST_INVOCATION_BEGIN();
 
 	    ac_relay.pin("@").set("IDLE","OFF");
-	    ac_relay.wait(1.5 ms);
+	    //ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
 
         ac_relay.pin("SENADDR0,SENADDR1,SENADDR2,SENADDR3,SENADDR4,SENADDR5,SENADDR6,COMMMODE, BLEN, INPUTMODE, MUXEN, OSCON, MUX0OUTA, MUX1OUTA, SPISSN, SPIMOSI, SPISCLK").set("AC","OFF");
         ac_relay.pin("SENGRP").set("AC","OFF");
-	    ac_relay.wait(1.5 ms);
+	    //ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
 
 
@@ -79,14 +79,14 @@ protected:
 
 		//MeasurEment Setups
 
-		ppmuMeasure.pin("MUX0OUTA,MUX1OUTA").execMode(TM::PVAL).numberOfSamples(100);
+		ppmuMeasure.pin("MUX0OUTA,MUX1OUTA").execMode(TM::PVAL).numberOfSamples(1);
 
 		//Hardware Specific Programing to avoid Hot Switching on the Current Force setup
 
-		clamp_on.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_ON").low(0.0 V).high(4.0 V);
-		clamp_off.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_OFF");
+		//clamp_on.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_ON").low(0.0 V).high(4.0 V);
+		//clamp_off.pin("MUX0OUTA,MUX1OUTA").status("CLAMP_OFF");
 
-		task1.add(setting).add(relay_on).add(ppmuMeasure).add(relay_off).add(clamp_on);
+		task1.add(setting).add(relay_on).add(ppmuMeasure).add(relay_off);
 
 		//Execute the Task list
 
@@ -121,7 +121,7 @@ protected:
 		//FOR_EACH_SITE_END();
 
 	    ac_relay.pin("@").set("AC","OFF");
-	    ac_relay.wait(1.5 ms);
+	    //ac_relay.wait(1.5 ms);
 	    ac_relay.execute();
 
 		ON_FIRST_INVOCATION_END();

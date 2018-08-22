@@ -16,8 +16,7 @@ using namespace std;
 
 class MEGA_OHM_TEST: public testmethod::TestMethod {
 protected:
-	double mWait_time;
-	string MEGA_pin;
+
 	int mdebug;
 
 #define D_MAX_ARRAY_SIZE 4096
@@ -30,13 +29,7 @@ protected:
 	virtual void initialize() {
 		//Add your initialization code here
 		//Note: Test Method API should not be used in this method!
-		addParameter("MEGA_pin", "PinString", &MEGA_pin,
-				testmethod::TM_PARAMETER_INPUT) .setDefault("ALLIO") .setComment(
-				"the dac output pin connected to the DGT");
 
-		addParameter("wait_time", "double", &mWait_time,
-				testmethod::TM_PARAMETER_INPUT) .setComment(
-				"wait for measurement");
 		addParameter("debug", "int", &mdebug, testmethod::TM_PARAMETER_INPUT);
 
 	}
@@ -87,9 +80,34 @@ protected:
 
 		string MEGA_pin_ARRAY[] = {
 
-		// add your pins
+		"snsr6sdout", "pll1lock", "pll0lock", "clkin", "dbgled4", "dbgled2",
+				"mbdata4", "mbdata3", "mbdata0", "mbwren", "mbch2",
+				"snsr3sdout", "snsr3scout", "snsr6resetn", "snsr6scout",
+				"systemclksel", "dbgled5", "dbgled1", "mbdata7", "mbdata2",
+				"mbclk", "mbreset", "mbch1", "snsr3resetn", "snsr3mclk",
+				"snsr5sdout", "snsr6mclk", "taraio0/papll1lf",
+				"taraio0/papll0lf", "dbgled3", "dbgled0", "mbdata5", "mbdata6",
+				"mbdata1", "mbvsync", "mbch0", "snsr2sdout", "snsr2scout",
+				"snsr5resetn", "snsr5scout", "snsr2resetn", "snsr2mclk",
+				"snsr4sdout", "snsr5mclk", "snsr1sdout", "snsr1scout",
+				"snsr4scout", "snsr4resetn", "snsr4mclk", "snsr1mclk",
+				"snsr1resetn", "snsr6data1p", "snsr6data1n", "snsr1data0p",
+				"snsr1data0n", "snsr6clkn", "snsr6clkp", "snsr6data0n",
+				"snsr1data1p", "snsr1clkp", "snsr1clkn", "snsr5data1p",
+				"snsr5data1n", "snsr6data0p", "snsr1data1n", "snsr2data0p",
+				"snsr2data0n", "snsr5clkn", "snsr5clkp", "snsr5data0n",
+				"snsr2data1p", "snsr2clkn", "snsr2clkp", "snsr4data1n",
+				"snsr4data1p", "snsr5data0p", "snsr2data1n", "snsr3data0n",
+				"snsr3data0p", "snsr4clkn", "snsr4clkp", "resetnlocalin",
+				"snsr3clkn", "snsr3clkp", "snsr4data0n", "snsr4data0p",
+				"pa50ldomipien", "resetnin", "ucomirq", "spicpol",
+				"ucomspiclk", "ucomspinss", "snsr3data1n", "snsr3data1p",
+				"pa50ldocoreen", "testmode", "chipid", "spicpna", "spi8b16b",
+				"ucomspiin", "ucomspiout"
+		        //"vddldomipiout",
+				//"vddldocoreout"
 
-		};
+				};
 
 		//
 
@@ -170,7 +188,7 @@ protected:
 
 		int site_num;
 
-		PPMU_SETTING setting;
+		PPMU_SETTING setting, setting2;
 		PPMU_RELAY relay_on, relay_off;
 		PPMU_MEASURE ppmuMeasure;
 		PPMU_CLAMP clamp_on, clamp_off;
@@ -184,8 +202,6 @@ protected:
 
 				//// POWER DOWN ////
 				///  LEVELSET USE ALL POWER 0V /////
-
-				cout << "A position" << endl;
 
 				// INITIALIZE and ONLY CONTACT USE PIN ///
 				ac_relay.pin("@").set("IDLE", "OFF");
@@ -201,66 +217,72 @@ protected:
 				Primary.level(spec1);
 				Primary.getLevelSpec().change("MEGALEVEL", 0.3);
 
+				Sequencer.stopVector(1286).run(TM::NORMAL);
 				// preFORCE 0.3V
 				FLUSH();
 
 				// FORCE 0V and CURRENT MEASURE
 				// Setups for PPMU
 
-				cout << "B position" << endl;
-
 				//Relay Setups
 
-				cout << sizeof(MEGA_pin_ARRAY) / sizeof(string) << endl;
+				setting2.pin(MEGA_Pin_Single_Array).iRange(1 uA ).min(-1 uA ).max(
+						1 uA ).vForce(0.3 V);
+
+				relay_on.pin(MEGA_Pin_Single_Array).status("PPMU_ON");
+				relay_off.pin(MEGA_Pin_Single_Array).status("AC_ON");
+
+				task1.add(setting2).add(relay_on);
 
 				for (int i = 0; i < sizeof(MEGA_pin_ARRAY) / sizeof(string); i++) {
 
-					cout << "C-1-1 position" << endl;
-
 					setting.pin(MEGA_pin_ARRAY[i]).iRange(1 uA ).min(-1 uA ).max(
-							1 uA ).vForce(0.0 V);
+											1 uA ).vForce(0.0 V);
 
-					cout << "C-1 position" << endl;
+					//relay_on.pin(MEGA_pin_ARRAY[i]).status("PPMU_ON");
 
-					relay_on.pin(MEGA_pin_ARRAY[i]).status("PPMU_ON");
+					//relay_on.wait(1.3 ms );
 
-					relay_on.wait(1.3 ms );
-
-					cout << "C-2 position" << endl;
-
-					relay_off.pin(MEGA_pin_ARRAY[i]).status("AC_ON");
+					//relay_off.pin(MEGA_pin_ARRAY[i]).status("AC_ON");
 
 					//MeasurEment Setups
 
-					cout << "C-3 position" << endl;
-
 					ppmuMeasure.pin(MEGA_pin_ARRAY[i]).execMode(TM::PVAL).numberOfSamples(
-							100);
+							1);
 
 					//Hardware Specific Programing to avoid Hot Switching on the Current Force setup
 
-					cout << "C-4 position" << endl;
+					//clamp_on.pin(MEGA_pin_ARRAY[i]).status("CLAMP_ON").low(0.0 V).high(
+					//		1.0 V);
+					//clamp_off.pin(MEGA_pin_ARRAY[i]).status("CLAMP_OFF");
 
-					clamp_on.pin(MEGA_pin_ARRAY[i]).status("CLAMP_ON").low(0.0 V).high(
-							1.0 V);
-					clamp_off.pin(MEGA_pin_ARRAY[i]).status("CLAMP_OFF");
+					//task1.add(setting).add(clamp_on).add(relay_on).add(
+					//		ppmuMeasure).add(relay_off);
 
-					cout << "C-5 position" << endl;
+					//task1.add(setting).add(relay_on).add(ppmuMeasure).add(
+					//		relay_off);
 
-					task1.add(setting).add(clamp_on).add(relay_on).add(
-							ppmuMeasure).add(relay_off);
+				if(i == sizeof(MEGA_pin_ARRAY) / sizeof(string) -1){
 
+					task1.add(setting).add(ppmuMeasure).add(setting2).add(relay_off);
+
+
+				} else {
+
+					task1.add(setting).add(ppmuMeasure).add(setting2);
+
+
+				}
 					//Execute the Task list
 
-					FLUSH();
+					//FLUSH();
 
 				}
 
 				task1.execute();
 
-			ON_FIRST_INVOCATION_END();
 
-		cout << "D position" << endl;
+			ON_FIRST_INVOCATION_END();
 
 		for (int i = 0; i < sizeof(MEGA_pin_ARRAY) / sizeof(string); i++) {
 			// Result upload and Datalog
@@ -274,7 +296,7 @@ protected:
 			///////////////////////////////////////////
 
 			cout << "site " << CURRENT_SITE_NUMBER() << " "
-					<< MEGA_pin_ARRAY[i] << " MEGAOHM current : "
+					<< MEGA_pin_ARRAY[i] << " S2S_SHORT MEGAOHM current : "
 					<< MEAGAOHM_VALUE_A[i] << endl;
 
 			TEST(MEGA_pin_ARRAY[i], MEGA_pin_ARRAY[i], LIMIT(TM::GT, -0.06 uA ,
@@ -284,9 +306,10 @@ protected:
 
 		///// MEGAOHM TEST S2P_SHORT TEST /////
 
-		cout << "E position" << endl;
-
 		ON_FIRST_INVOCATION_BEGIN();
+
+				Sequencer.reset();
+				FLUSH();
 
 				/// FORCE ALL OSPIN 0.1V /////
 				LEVEL_SPEC spec1(1, 2);
@@ -294,6 +317,7 @@ protected:
 				Primary.getLevelSpec().change("MEGALEVEL", 0.1);
 
 				// preFORCE 0.1V
+				Sequencer.stopVector(1286).run(TM::NORMAL);
 				FLUSH();
 
 				// FORCE 0V and CURRENT MEASURE
@@ -308,27 +332,28 @@ protected:
 
 				relay_on.pin(MEGA_Pin_Single_Array).status("PPMU_ON");
 
-				relay_on.wait(1.3 ms );
+				//relay_on.wait(1.3 ms );
 
 				relay_off.pin(MEGA_Pin_Single_Array).status("AC_ON");
 
 				//MeasurEment Setups
 
 				ppmuMeasure.pin(MEGA_Pin_Single_Array).execMode(TM::PVAL).numberOfSamples(
-						100);
+						1);
 
 				//Hardware Specific Programing to avoid Hot Switching on the Current Force setup
 
-				clamp_on.pin(MEGA_Pin_Single_Array).status("CLAMP_ON").low(0.0 V).high(
-						1.0 V);
-				clamp_off.pin(MEGA_Pin_Single_Array).status("CLAMP_OFF");
+				//clamp_on.pin(MEGA_Pin_Single_Array).status("CLAMP_ON").low(0.0 V).high(
+				//		1.0 V);
+				//clamp_off.pin(MEGA_Pin_Single_Array).status("CLAMP_OFF");
 
-				task2.add(setting).add(clamp_on).add(relay_on).add(ppmuMeasure).add(
-						relay_off);
+				//task2.add(setting).add(clamp_on).add(relay_on).add(ppmuMeasure).add(
+				//		relay_off);
+				task2.add(setting).add(relay_on).add(ppmuMeasure).add(relay_off);
 
 				//Execute the Task list
 
-				FLUSH();
+				//FLUSH();
 
 				task2.execute();
 
@@ -337,8 +362,6 @@ protected:
 				ac_relay.execute();
 
 			ON_FIRST_INVOCATION_END();
-
-		cout << "F position" << endl;
 
 		for (int i = 0; i < sizeof(MEGA_pin_ARRAY) / sizeof(string); i++) {
 			// Result upload and Datalog
@@ -351,15 +374,13 @@ protected:
 			///////////////////////////////////////////
 
 			cout << "site " << CURRENT_SITE_NUMBER() << " "
-					<< MEGA_pin_ARRAY[i] << " MEGAOHM current : "
+					<< MEGA_pin_ARRAY[i] << " S2P_SHORT MEGAOHM current : "
 					<< MEAGAOHM_VALUE_B[i] << endl;
 
 			TEST(MEGA_pin_ARRAY[i], MEGA_pin_ARRAY[i], LIMIT(TM::GT, -0.1 uA ,
 					TM::LT, 0.1 uA ), MEAGAOHM_VALUE_B[i], TM::CONTINUE);
 
 		}
-
-		cout << "G position" << endl;
 
 		return;
 	}
